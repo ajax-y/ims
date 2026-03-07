@@ -18,7 +18,7 @@ function Login({ onLogin }) {
     }
 
     const user = loginUser(userId, password);
-    
+
     if (user) {
       onLogin(user);
     } else {
@@ -31,9 +31,9 @@ function Login({ onLogin }) {
       {/* Left Square */}
       <div className="login-left">
         {/* Placeholder for real logo, using a text base or looking for public asset */}
-        <img 
-          src="/logo.png" 
-          alt="RIT Logo" 
+        <img
+          src={`${import.meta.env.BASE_URL}logo.png`}
+          alt="RIT Logo"
           className="login-logo"
           onError={(e) => {
             e.target.onerror = null;
@@ -41,7 +41,7 @@ function Login({ onLogin }) {
           }}
         />
         <p className="login-left-text">
-          Rajalakshmi Institute of Technology is an engineering college in Chennai, Tamil Nadu, India. RIT is approved by AICTE and affiliated with Anna University, Chennai and accredited eith A++ Grade in NAAC.
+          Rajalakshmi Institute of Technology is an engineering college in Chennai, Tamil Nadu, India. RIT is approved by AICTE and affiliated with Anna University, Chennai and accredited with A++ Grade in NAAC.
         </p>
       </div>
 
@@ -49,29 +49,27 @@ function Login({ onLogin }) {
       <div className="login-right">
         <div className="login-card">
           <h2 className="login-title">Login</h2>
-          
+
           {error && <div style={{ color: 'var(--danger)', marginBottom: '1rem', textAlign: 'center', fontSize: '0.875rem' }}>{error}</div>}
 
           <form onSubmit={handleSubmit}>
             <div className="input-group">
-              <label htmlFor="userId">User ID (Reg No)</label>
-              <input 
-                type="text" 
-                id="userId" 
+              <label htmlFor="userId">User ID</label>
+              <input
+                type="text"
+                id="userId"
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
-                placeholder="e.g. STU001 or FAC012"
               />
             </div>
 
             <div className="input-group">
               <label htmlFor="password">Password</label>
-              <input 
-                type="password" 
-                id="password" 
+              <input
+                type="password"
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
               />
             </div>
 

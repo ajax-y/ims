@@ -42,9 +42,20 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
         >
           <Menu size={24} color="var(--text-main)" />
         </button>
-        <span style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-main)' }}>
-          IMS Portal
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <img 
+            src={`${import.meta.env.BASE_URL}logo.png`}
+            alt="RIT Logo" 
+            style={{ height: '32px', objectFit: 'contain' }}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.style.display = 'none';
+            }}
+          />
+          <span style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-main)' }}>
+            IMS Portal
+          </span>
+        </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>

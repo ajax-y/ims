@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCircle, Save, Edit2, Mail, Phone, MapPin, Droplet, HeartPulse } from 'lucide-react';
+import { UserCircle, Save, Edit2, Mail, Phone, MapPin, Droplet, HeartPulse, Camera } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 
 const ProfileView = ({ user }) => {
@@ -11,7 +11,8 @@ const ProfileView = ({ user }) => {
     bio: user.bio || '',
     address: user.address || '',
     bloodGroup: user.bloodGroup || '',
-    emergencyContact: user.emergencyContact || ''
+    emergencyContact: user.emergencyContact || '',
+    profilePicture: user.profilePicture || ''
   });
 
   // Keep synced if user prop changes
@@ -20,13 +21,25 @@ const ProfileView = ({ user }) => {
       bio: user.bio || '',
       address: user.address || '',
       bloodGroup: user.bloodGroup || '',
-      emergencyContact: user.emergencyContact || ''
+      emergencyContact: user.emergencyContact || '',
+      profilePicture: user.profilePicture || ''
     });
   }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, profilePicture: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = () => {
@@ -66,16 +79,33 @@ const ProfileView = ({ user }) => {
         
         {/* Left Column - Read Only Admin Data */}
         <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <div style={{ 
-            width: '120px', height: '120px', borderRadius: '50%', 
-            backgroundColor: 'var(--bg-color)', display: 'flex', 
-            alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem',
-            color: 'var(--primary)', border: '4px solid var(--border)'
-          }}>
-            {user.profilePicture ? (
-              <img src={user.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-            ) : (
-              <UserCircle size={64} />
+          <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
+            <div style={{ 
+              width: '120px', height: '120px', borderRadius: '50%', 
+              backgroundColor: 'var(--bg-color)', display: 'flex', 
+              alignItems: 'center', justifyContent: 'center',
+              color: 'var(--primary)', border: '4px solid var(--border)',
+              overflow: 'hidden'
+            }}>
+              {formData.profilePicture ? (
+                <img src={formData.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <UserCircle size={64} />
+              )}
+            </div>
+            
+            {isEditing && (
+              <label style={{
+                position: 'absolute', bottom: 0, right: 0,
+                backgroundColor: 'var(--primary)', color: 'white',
+                width: '36px', height: '36px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', border: '3px solid white',
+                boxShadow: 'var(--shadow-md)', transition: 'var(--transition)'
+              }} className="hover:scale-110">
+                <Camera size={16} />
+                <input type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+              </label>
             )}
           </div>
           

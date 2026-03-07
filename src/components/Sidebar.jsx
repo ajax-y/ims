@@ -65,6 +65,20 @@ function Sidebar({ role, activeTab, onTabChange, isOpen }) {
       overflowY: 'auto'
     }}>
       <nav style={{ padding: '1.5rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        
+        {/* Logo injected above the Home tab */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
+          <img 
+            src={`${import.meta.env.BASE_URL}logo.png`}
+            alt="RIT Logo" 
+            style={{ maxWidth: '180px', height: 'auto', objectFit: 'contain' }}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.style.display = 'none';
+            }}
+          />
+        </div>
+
         {links.map((link) => {
           const isActive = activeTab === link.id;
           const Icon = link.icon;

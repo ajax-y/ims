@@ -35,16 +35,22 @@ const CalendarCard = () => (
 );
 
 function HomeView({ user }) {
-  const { getCGPA, getStudentAttendanceStats } = useData();
+  const { getCGPA, getStudentAttendanceStats, getSubjectsForStudent } = useData();
 
   const cgpa = getCGPA(user?.id);
+  const mySubjects = getSubjectsForStudent(user?.department);
   const attStats = getStudentAttendanceStats(user?.id);
   
-  const attPerc = attStats.completedPeriods > 0 
+  const hasClasses = mySubjects.length > 0;
+  const hasAttendanceData = hasClasses && attStats.completedPeriods > 0;
+
+  const attPerc = hasAttendanceData 
     ? Math.round((attStats.attendedPeriods / attStats.completedPeriods) * 100)
     : 0;
 
-  const leavesTaken = attStats.completedPeriods - attStats.attendedPeriods;
+  const leavesTaken = hasAttendanceData 
+    ? (attStats.completedPeriods - attStats.attendedPeriods)
+    : 0;
 
   return (
     <div>
@@ -102,18 +108,22 @@ function HomeView({ user }) {
           <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem', fontWeight: '500' }}>
             Average Attendance <LiveIcon />
           </p>
-          <div className="progress-ring" style={{ '--progress': `${attPerc}%` }}>
-            <span className="progress-ring-text">{attPerc}%</span>
+          <div className={`progress-ring ${!hasAttendanceData ? 'default-ring' : ''}`} style={hasAttendanceData ? { '--progress': `${attPerc}%` } : {}}>
+            <span className="progress-ring-text" style={!hasAttendanceData ? { color: 'var(--text-muted)' } : {}}>
+              {hasAttendanceData ? `${attPerc}%` : 'N/A'}
+            </span>
           </div>
         </div>
 
-        {/* Blue Progress Ring - Taken Leave */}
+        {/* Taken Leave */}
         <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem', fontWeight: '500' }}>
             Taken Leave <LiveIcon />
           </p>
-          <div className="progress-ring default-ring" style={{ '--progress': '100%', '--ring-color': 'var(--danger)' }}>
-            <span className="progress-ring-text" style={{ color: 'var(--danger)' }}>{leavesTaken}</span>
+          <div className="progress-ring default-ring" style={hasAttendanceData ? { '--progress': '100%', '--ring-color': 'var(--danger)' } : {}}>
+            <span className="progress-ring-text" style={{ color: hasAttendanceData ? 'var(--danger)' : 'var(--text-muted)' }}>
+              {hasAttendanceData ? leavesTaken : 'N/A'}
+            </span>
           </div>
         </div>
       </div>
