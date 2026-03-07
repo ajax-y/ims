@@ -1,20 +1,11 @@
 import React, { useState } from 'react';
 import { useData } from '../../../context/DataContext';
 
-const attendanceData = [
-  { id: 1, code: 'CS101', name: 'Programming in C', faculty: 'Dr. Smith' },
-  { id: 2, code: 'CS102', name: 'Data Structures', faculty: 'Prof. John' },
-  { id: 3, code: 'MA101', name: 'Engineering Math', faculty: 'Dr. Alan' },
-  { id: 4, code: 'PH101', name: 'Physics', faculty: 'Dr. Banner' },
-  { id: 5, code: 'GE101', name: 'English', faculty: 'Prof. Mary' },
-];
-
 function AttendanceView({ user }) {
-  const { getStudentAttendanceStats } = useData();
+  const { getStudentAttendanceStats, getSubjectsForStudent } = useData();
   const [sem, setSem] = useState('01');
   
-  // Globally fetches the single combined struct for demo simplicity
-  // In a real expanded app, each code would have its own key struct
+  const mySubjects = getSubjectsForStudent(user?.department);
   const globalStats = getStudentAttendanceStats(user?.id);
 
   return (
@@ -54,10 +45,12 @@ function AttendanceView({ user }) {
             </tr>
           </thead>
           <tbody>
-            {attendanceData.map((row) => {
+            {mySubjects.length === 0 ? (
+              <tr><td colSpan="7" className="text-center text-muted">No subjects assigned by admin yet.</td></tr>
+            ) : mySubjects.map((row, idx) => {
               // Simulated breakdown of global structural transaction stats 
-              // across all 5 subjects
-              const total = Math.ceil(globalStats.completedPeriods / 5);
+              // across all subjects
+              const total = Math.ceil(globalStats.completedPeriods / (mySubjects.length || 1));
               
               // Simplistic division for attendance allocation display purposes
               let attended = 0;
@@ -69,12 +62,16 @@ function AttendanceView({ user }) {
               const percentage = total > 0 ? Math.round((attended / total) * 100) : 0;
               const isLow = percentage < 75;
               
+              // Try to parse faculty name if possible, otherwise use ID.
+              // We'll just display the facultyId which is assigned.
+              const facName = row.facultyId || 'Unknown';
+              
               return (
-                <tr key={row.id}>
-                  <td>{row.id}</td>
-                  <td>{row.code}</td>
-                  <td>{row.name}</td>
-                  <td>{row.faculty}</td>
+                <tr key={row.id || idx}>
+                  <td>{idx + 1}</td>
+                  <td>-</td>
+                  <td className="font-bold">{row.subject}</td>
+                  <td>{facName}</td>
                   <td>{attended}</td>
                   <td>{total}</td>
                   <td className={isLow ? 'text-danger font-bold' : 'text-success font-bold'}>

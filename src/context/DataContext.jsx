@@ -64,6 +64,10 @@ export function DataProvider({ children }) {
     return facultyAssignments.filter(a => a.facultyId === facultyId);
   };
 
+  const getSubjectsForStudent = (classNode) => {
+    return facultyAssignments.filter(a => a.assignedClassNode === classNode);
+  };
+
   const updateMark = (studentId, examType, subject, value) => {
     setMarks(prev => ({
       ...prev,
@@ -129,7 +133,7 @@ export function DataProvider({ children }) {
     <DataContext.Provider value={{ 
       marks, updateMark, getStudentMarks, getCGPA,
       attendance, incrementClassAttendance, getStudentAttendanceStats,
-      facultyAssignments, assignClassToFaculty, getAssignmentsForFaculty,
+      facultyAssignments, assignClassToFaculty, getAssignmentsForFaculty, getSubjectsForStudent,
       clearAllData
     }}>
       {children}

@@ -1,23 +1,10 @@
 import React, { useState } from 'react';
 import { useData } from '../../../context/DataContext';
 
-const subjects = [
-  { id: 1, code: 'CS101', name: 'Programming in C', faculty: 'Dr. Smith', m1: 85, m2: 90, m3: 75, m4: 20, m5: 88, tot: 358 },
-  { id: 2, code: 'CS102', name: 'Data Structures', faculty: 'Prof. John', m1: 65, m2: 50, m3: 45, m4: 55, m5: 60, tot: 275 },
-];
-
-const labs = [
-  { id: 1, code: 'CS111', name: 'Programming Lab', faculty: 'Dr. Smith', c1: 85, c2: 45, c3: 90, tot: 220 },
-];
-
-const grades = [
-  { id: 1, year: '2025-2026', sem: '01', code: 'CS101', name: 'Programming in C', grade: 'O', result: 'Pass', examMonth: 'Nov 2025' },
-  { id: 2, year: '2025-2026', sem: '01', code: 'CS102', name: 'Data Structures', grade: 'C', result: 'Fail', examMonth: 'Nov 2025' },
-];
-
 export const CATMarks = ({ user }) => {
-  const { getStudentMarks } = useData();
+  const { getStudentMarks, getSubjectsForStudent } = useData();
   const marks = getStudentMarks(user?.id, 'CAT Marks');
+  const mySubjects = getSubjectsForStudent(user?.department);
 
   return (
     <div>
@@ -31,7 +18,9 @@ export const CATMarks = ({ user }) => {
             </tr>
           </thead>
           <tbody>
-            {subjects.map((row) => {
+            {mySubjects.length === 0 ? (
+              <tr><td colSpan="10" className="text-center text-muted">No subjects assigned yet.</td></tr>
+            ) : mySubjects.map((row, idx) => {
               const m1 = parseInt(marks?.C01) || 0;
               const m2 = parseInt(marks?.C02) || 0;
               const m3 = parseInt(marks?.C03) || 0;
@@ -39,9 +28,11 @@ export const CATMarks = ({ user }) => {
               const m5 = parseInt(marks?.C05) || 0;
               const tot = m1 + m2 + m3 + m4 + m5;
               
+              const facName = row.facultyId || 'Unknown';
+
               return (
-                <tr key={row.id}>
-                  <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
+                <tr key={row.id || idx}>
+                  <td>{idx + 1}</td><td>-</td><td className="font-bold">{row.subject}</td><td>{facName}</td>
                   <td className={m1 > 0 && m1 < 25 ? 'text-danger font-bold' : ''}>{m1 || '-'}</td>
                   <td className={m2 > 0 && m2 < 25 ? 'text-danger font-bold' : ''}>{m2 || '-'}</td>
                   <td className={m3 > 0 && m3 < 25 ? 'text-danger font-bold' : ''}>{m3 || '-'}</td>
@@ -59,8 +50,9 @@ export const CATMarks = ({ user }) => {
 }
 
 export const LabMarks = ({ user }) => {
-  const { getStudentMarks } = useData();
+  const { getStudentMarks, getSubjectsForStudent } = useData();
   const marks = getStudentMarks(user?.id, 'LAB Marks');
+  const mySubjects = getSubjectsForStudent(user?.department);
 
   return (
     <div>
@@ -74,14 +66,18 @@ export const LabMarks = ({ user }) => {
             </tr>
           </thead>
           <tbody>
-            {labs.map((row) => {
+            {mySubjects.length === 0 ? (
+              <tr><td colSpan="8" className="text-center text-muted">No subjects assigned yet.</td></tr>
+            ) : mySubjects.map((row, idx) => {
               const c1 = parseInt(marks?.['Cycle 1']) || 0;
               const c2 = parseInt(marks?.['Cycle 2']) || 0;
               const c3 = parseInt(marks?.['Cycle 3']) || 0;
               const tot = c1 + c2 + c3;
+              const facName = row.facultyId || 'Unknown';
+
               return (
-                <tr key={row.id}>
-                  <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
+                <tr key={row.id || idx}>
+                  <td>{idx + 1}</td><td>-</td><td className="font-bold">{row.subject}</td><td>{facName}</td>
                   <td className={c1 > 0 && c1 < 50 ? 'text-danger font-bold' : ''}>{c1 || '-'}</td>
                   <td className={c2 > 0 && c2 < 50 ? 'text-danger font-bold' : ''}>{c2 || '-'}</td>
                   <td className={c3 > 0 && c3 < 50 ? 'text-danger font-bold' : ''}>{c3 || '-'}</td>
@@ -97,8 +93,9 @@ export const LabMarks = ({ user }) => {
 }
 
 export const AssignmentMarks = ({ user }) => {
-  const { getStudentMarks } = useData();
+  const { getStudentMarks, getSubjectsForStudent } = useData();
   const marks = getStudentMarks(user?.id, 'Assignment Marks');
+  const mySubjects = getSubjectsForStudent(user?.department);
 
   return (
     <div>
@@ -112,17 +109,20 @@ export const AssignmentMarks = ({ user }) => {
             </tr>
           </thead>
           <tbody>
-            {subjects.map((row) => {
+            {mySubjects.length === 0 ? (
+              <tr><td colSpan="10" className="text-center text-muted">No subjects assigned yet.</td></tr>
+            ) : mySubjects.map((row, idx) => {
               const a1 = parseInt(marks?.A01) || 0;
               const a2 = parseInt(marks?.A02) || 0;
               const a3 = parseInt(marks?.A03) || 0;
               const a4 = parseInt(marks?.A04) || 0;
               const a5 = parseInt(marks?.A05) || 0;
               const tot = a1 + a2 + a3 + a4 + a5;
+              const facName = row.facultyId || 'Unknown';
               
               return (
-                <tr key={row.id}>
-                  <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
+                <tr key={row.id || idx}>
+                  <td>{idx + 1}</td><td>-</td><td className="font-bold">{row.subject}</td><td>{facName}</td>
                   <td className={a1 > 0 && a1 < 5 ? 'text-danger font-bold' : ''}>{a1 || '-'}</td>
                   <td className={a2 > 0 && a2 < 5 ? 'text-danger font-bold' : ''}>{a2 || '-'}</td>
                   <td className={a3 > 0 && a3 < 5 ? 'text-danger font-bold' : ''}>{a3 || '-'}</td>
@@ -139,9 +139,12 @@ export const AssignmentMarks = ({ user }) => {
   );
 }
 
-export const GradeBook = () => {
+export const GradeBook = ({ user }) => {
+  const { getSubjectsForStudent } = useData();
   const [sem, setSem] = useState('01');
   const [show, setShow] = useState(false);
+  
+  const mySubjects = getSubjectsForStudent(user?.department);
 
   return (
     <div>
@@ -175,15 +178,20 @@ export const GradeBook = () => {
                 </tr>
               </thead>
               <tbody>
-                {grades.map((row) => {
-                  const isFail = row.grade === 'C' && row.result === 'Fail';
+                {mySubjects.length === 0 ? (
+                  <tr><td colSpan="8" className="text-center text-muted">No subjects assigned yet.</td></tr>
+                ) : mySubjects.map((row, idx) => {
+                  // For simulation purposes using O grade
+                  const grade = 'O'; 
+                  const result = 'Pass';
+                  
                   return (
-                    <tr key={row.id}>
-                      <td>{row.id}</td><td>{row.year}</td><td>{row.sem}</td><td>{row.code}</td>
-                      <td>{row.name}</td>
-                      <td className={isFail ? 'text-danger font-bold' : ''}>{row.grade}</td>
-                      <td className={isFail ? 'text-danger font-bold' : ''}>{row.result}</td>
-                      <td>{row.examMonth}</td>
+                    <tr key={row.id || idx}>
+                      <td>{idx + 1}</td><td>2025-2026</td><td>{sem}</td><td>-</td>
+                      <td className="font-bold">{row.subject}</td>
+                      <td>{grade}</td>
+                      <td className="text-success font-bold">{result}</td>
+                      <td>Nov 2025</td>
                     </tr>
                   );
                 })}
