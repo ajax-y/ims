@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Home, Calendar, CheckSquare, FileText, 
   BarChart2, BookOpen, Layers, ClipboardList,
-  Users, UserPlus, FileCheck, Award 
+  Users, UserPlus, FileCheck, Award, FolderDown, UploadCloud
 } from 'lucide-react';
 
 const studentLinks = [
@@ -13,7 +13,8 @@ const studentLinks = [
   { id: 'cat', name: 'CAT Marks', icon: BarChart2 },
   { id: 'lab', name: 'LAB Marks', icon: BookOpen },
   { id: 'assignment', name: 'Assignment Marks', icon: Layers },
-  { id: 'grade', name: 'Grade Book', icon: Award }
+  { id: 'grade', name: 'Grade Book', icon: Award },
+  { id: 'material_hub', name: 'Material Hub', icon: FolderDown }
 ];
 
 const facultyLinks = [
@@ -23,7 +24,8 @@ const facultyLinks = [
   { id: 'cat', name: 'CAT Marks', icon: BarChart2 },
   { id: 'lab', name: 'LAB Marks', icon: BookOpen },
   { id: 'assignment', name: 'Assignment Marks', icon: Layers },
-  { id: 'leave', name: 'Apply Leave / OD', icon: FileText }
+  { id: 'leave', name: 'Apply Leave / OD', icon: FileText },
+  { id: 'material_hub', name: 'Material Hub', icon: UploadCloud }
 ];
 
 const adminLinks = [

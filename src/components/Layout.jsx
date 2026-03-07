@@ -26,7 +26,7 @@ function Layout({ user, role, activeTab, onTabChange, onLogout, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-color)' }}>
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
-        <Header user={user} onToggleSidebar={toggleSidebar} onLogout={onLogout} />
+        <Header user={user} onToggleSidebar={toggleSidebar} onLogout={onLogout} onTabChange={onTabChange} />
       </div>
       
       <div style={{ display: 'flex', flex: 1, marginTop: '70px' }}>

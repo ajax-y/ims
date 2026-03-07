@@ -9,6 +9,7 @@ import {
   ManageClassesView
 } from './views/AdminViews';
 import FacultyAssignmentView from './views/FacultyAssignmentView';
+import ProfileView from '../../components/ProfileView';
 
 function AdminDashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
@@ -25,6 +26,7 @@ function AdminDashboard({ user, onLogout }) {
       case 'approvals': return <ApprovalsView />;
       case 'results': return <SemResultsView />;
       case 'classes': return <ManageClassesView />;
+      case 'profile': return <ProfileView user={user} />;
       default: return <AdminHomeView />;
     }
   };

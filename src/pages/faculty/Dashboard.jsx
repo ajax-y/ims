@@ -3,6 +3,8 @@ import Layout from '../../components/Layout';
 import FacultyHomeView from './views/FacultyHomeView';
 import StudentAttendanceView from './views/StudentAttendanceView';
 import { FacultyCATMarks, FacultyLabMarks, FacultyAssignmentMarks } from './views/FacultyMarksViews';
+import FacultyMaterialHubView from './views/FacultyMaterialHubView';
+import ProfileView from '../../components/ProfileView';
 
 // Reusing some student views for personal metrics/leaves
 import TimeTableView from '../student/views/TimeTableView';
@@ -21,6 +23,8 @@ function FacultyDashboard({ user, onLogout }) {
       case 'lab': return <FacultyLabMarks />;
       case 'assignment': return <FacultyAssignmentMarks />;
       case 'leave': return <LeaveView />; // Apply leave
+      case 'material_hub': return <FacultyMaterialHubView user={user} />;
+      case 'profile': return <ProfileView user={user} />;
       default: return <FacultyHomeView user={user} />;
     }
   };

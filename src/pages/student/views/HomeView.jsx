@@ -1,5 +1,6 @@
 import React from 'react';
 import { useData } from '../../../context/DataContext';
+import { AlertTriangle } from 'lucide-react';
 
 const LiveIcon = () => (
   <span style={{
@@ -48,7 +49,28 @@ function HomeView({ user }) {
   return (
     <div>
       <h2 style={{ fontSize: '1.875rem', fontWeight: '700', marginBottom: '0.5rem' }}>Hi, welcome back!</h2>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Here is an overview of your academic stats.</p>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>Here is an overview of your academic stats.</p>
+
+      {attStats.completedPeriods > 0 && attPerc < 75 && (
+        <div style={{
+          backgroundColor: '#fef2f2',
+          borderLeft: '4px solid var(--danger)',
+          padding: '1rem 1.5rem',
+          marginBottom: '2rem',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem'
+        }} className="fade-in">
+          <AlertTriangle color="var(--danger)" size={24} />
+          <div>
+            <h4 style={{ color: 'var(--danger)', fontWeight: '600', marginBottom: '0.25rem' }}>Low Attendance Warning</h4>
+            <p style={{ color: '#b91c1c', fontSize: '0.9rem', margin: 0 }}>
+              Your current attendance is <strong>{attPerc}%</strong>, which is below the mandatory 75% threshold. Please meet your class advisor immediately.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div style={{
         display: 'grid',

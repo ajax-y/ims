@@ -5,6 +5,8 @@ import TimeTableView from './views/TimeTableView';
 import AttendanceView from './views/AttendanceView';
 import LeaveView from './views/LeaveView';
 import { CATMarks, LabMarks, AssignmentMarks, GradeBook } from './views/MarksViews';
+import StudentMaterialHubView from './views/StudentMaterialHubView';
+import ProfileView from '../../components/ProfileView';
 
 function StudentDashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
@@ -19,6 +21,8 @@ function StudentDashboard({ user, onLogout }) {
       case 'lab': return <LabMarks user={user} />;
       case 'assignment': return <AssignmentMarks user={user} />;
       case 'grade': return <GradeBook user={user} />;
+      case 'material_hub': return <StudentMaterialHubView user={user} />;
+      case 'profile': return <ProfileView user={user} />;
       default: return <HomeView user={user} />;
     }
   };

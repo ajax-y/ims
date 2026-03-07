@@ -6,7 +6,7 @@ import { useData } from '../../../context/DataContext';
 const MarksEntryTable = ({ title, columns }) => {
   const { classes } = useClasses();
   const { getStudentsByClass } = useUser();
-  const { getStudentMarks, updateMark } = useData();
+  const { getStudentMarks, updateMark, getStudentAttendanceStats } = useData();
   
   const [selectedClass, setSelectedClass] = useState('');
   const [students, setStudents] = useState([]);
@@ -22,7 +22,26 @@ const MarksEntryTable = ({ title, columns }) => {
   };
 
   const handleSubmit = () => {
+    // Save confirmation
     alert(`${title} Saved Successfully to System!`);
+    
+    // Background Check: 75% Rule Notification Trigger
+    let alertCount = 0;
+    students.forEach(student => {
+      const stats = getStudentAttendanceStats(student.id);
+      if (stats.completedPeriods > 0) {
+        const perc = (stats.attendedPeriods / stats.completedPeriods);
+        if (perc < 0.75) {
+          alertCount++;
+          // Simulate Mobile SMS/Email Notification
+          console.log(`[SYSTEM ALERT] SMS triggered for ${student.name} (${student.id}). Contact: ${student.mobileNumber || 'Unknown'}. Reason: Attendance < 75% (${Math.round(perc * 100)}%)`);
+        }
+      }
+    });
+
+    if (alertCount > 0) {
+      console.log(`Triggered ${alertCount} automated low-attendance notification(s) in the background.`);
+    }
   };
 
   return (

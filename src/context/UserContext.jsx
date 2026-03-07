@@ -69,10 +69,18 @@ export function UserProvider({ children }) {
     return { studentCount, facultyCount, adminCount };
   };
 
+  const updateUserProfile = (userId, newProfileData) => {
+    setUsers(prevUsers => 
+      prevUsers.map(u => 
+        u.id === userId ? { ...u, ...newProfileData } : u
+      )
+    );
+  };
+
   return (
     <UserContext.Provider value={{ 
       users, loginUser, addUser, deleteUser, clearAllUsersExceptSelf, 
-      resetToDefaults, getStudentsByClass, getStats 
+      resetToDefaults, getStudentsByClass, getStats, updateUserProfile
     }}>
       {children}
     </UserContext.Provider>

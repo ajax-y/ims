@@ -95,18 +95,29 @@ export const TimetableUploadView = ({ type }) => {
 export const ManageUsersView = ({ type }) => {
   const { classes } = useClasses();
   const { addUser } = useUser();
-  const [formData, setFormData] = useState({ name: '', id: '', password: '', department: '' });
+  const [formData, setFormData] = useState({ 
+    name: '', id: '', password: '', department: '', email: '', mobileNumber: '' 
+  });
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleAddUser = () => {
-    if (!formData.name || !formData.id || !formData.password) return alert("Please fill all required fields");
+    if (!formData.name || !formData.id || !formData.password || !formData.email || !formData.mobileNumber) {
+      return alert("Please fill all required fields, including Email and Mobile Number.");
+    }
+    
+    // 10-digit mobile validation
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(formData.mobileNumber)) {
+      return alert("Mobile Number must be exactly 10 digits.");
+    }
+
     if (type === 'student' && !formData.department) return alert("Department/Class is required for students");
 
     const success = addUser({ ...formData, role: type });
     if (success) {
       alert(`${type} Added Successfully!`);
-      setFormData({ name: '', id: '', password: '', department: '' });
+      setFormData({ name: '', id: '', password: '', department: '', email: '', mobileNumber: '' });
     } else {
       alert(`User ID "${formData.id}" already exists!`);
     }
@@ -143,6 +154,14 @@ export const ManageUsersView = ({ type }) => {
             )}
           </div>
         )}
+        <div className="input-group">
+          <label>Email Address *</label>
+          <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="user@rit.edu" required />
+        </div>
+        <div className="input-group">
+          <label>Mobile Number *</label>
+          <input type="text" name="mobileNumber" value={formData.mobileNumber} onChange={handleChange} placeholder="10-digit number" maxLength="10" required />
+        </div>
       </div>
       <button className="btn btn-success" style={{ backgroundColor: 'var(--success)', color: 'white', marginTop: '1rem', width: '100%' }} onClick={handleAddUser}>
         Add {type}
