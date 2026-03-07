@@ -1,41 +1,63 @@
 import React, { useState } from 'react';
+import { useClasses } from '../../../context/ClassContext';
+import { useUser } from '../../../context/UserContext';
 
-export const AdminHomeView = () => (
-  <div>
-    <h2 style={{ fontSize: '1.875rem', fontWeight: '700', marginBottom: '0.5rem' }}>Admin Dashboard</h2>
-    <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>College Statistics Overview</p>
+export const AdminHomeView = () => {
+  const { getStats, clearAllUsersExceptSelf } = useUser();
+  const stats = getStats();
 
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-      <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--primary)' }}>
-        <p className="text-muted">Total Students</p>
-        <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>1,240</h3>
-        <p className="text-sm">Year 1: 340 | Year 2: 300 | Year 3: 310 | Year 4: 290</p>
+  const handleClearAll = () => {
+    if (window.confirm("WARNING: This will delete ALL users (except you), ALL attendance, and ALL marks safely from the system. Are you sure?")) {
+      clearAllUsersExceptSelf('aden'); // Preserve default admin
+      localStorage.removeItem('ims_marks');
+      localStorage.removeItem('ims_attendance');
+      alert("System Reset Successfully! All data has been cleared.");
+      window.location.reload();
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <h2 style={{ fontSize: '1.875rem', fontWeight: '700' }}>Admin Dashboard</h2>
+        <button className="btn btn-danger" onClick={handleClearAll}>
+          ⚠️ Nuclear Reset (Clear All Data)
+        </button>
       </div>
-      <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--success)' }}>
-        <p className="text-muted">Teaching Staff</p>
-        <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>145</h3>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>College Statistics Overview</p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--primary)' }}>
+          <p className="text-muted">Total Students</p>
+          <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.studentCount}</h3>
+        </div>
+        <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--success)' }}>
+          <p className="text-muted">Teaching Staff</p>
+          <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.facultyCount}</h3>
+        </div>
+        <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--warning)' }}>
+          <p className="text-muted">Admins</p>
+          <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.adminCount}</h3>
+        </div>
       </div>
-      <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--warning)' }}>
-        <p className="text-muted">Non-Teaching Staff</p>
-        <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>68</h3>
+
+      <div className="card" style={{ padding: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Academic Calendar</h3>
+        <div className="input-group">
+          <label>Upload New Calendar (PDF)</label>
+          <input type="file" accept=".pdf" />
+        </div>
+        <button className="btn btn-primary" onClick={() => alert('Calendar Uploaded to all dashboards!')}>
+          Upload and Publish
+        </button>
       </div>
     </div>
-
-    <div className="card" style={{ padding: '1.5rem' }}>
-      <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Academic Calendar</h3>
-      <div className="input-group">
-        <label>Upload New Calendar (PDF)</label>
-        <input type="file" accept=".pdf" />
-      </div>
-      <button className="btn btn-primary" onClick={() => alert('Calendar Uploaded to all dashboards!')}>
-        Upload and Publish
-      </button>
-    </div>
-  </div>
-);
+  );
+};
 
 export const TimetableUploadView = ({ type }) => {
   const isStudent = type === 'student';
+  const { classes } = useClasses();
 
   return (
     <div className="card" style={{ padding: '2rem', maxWidth: '600px' }}>
@@ -48,7 +70,9 @@ export const TimetableUploadView = ({ type }) => {
             <label>Select Year</label>
             <select><option>01</option><option>02</option><option>03</option><option>04</option></select>
             <label style={{marginTop: '1rem'}}>Select Class</label>
-            <select><option>B.E.ECE/A</option><option>B.E.CSE/B</option></select>
+            <select>
+              {classes.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </>
         ) : (
           <>
@@ -69,30 +93,58 @@ export const TimetableUploadView = ({ type }) => {
 };
 
 export const ManageUsersView = ({ type }) => {
+  const { classes } = useClasses();
+  const { addUser } = useUser();
+  const [formData, setFormData] = useState({ name: '', id: '', password: '', department: '' });
+
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleAddUser = () => {
+    if (!formData.name || !formData.id || !formData.password) return alert("Please fill all required fields");
+    if (type === 'student' && !formData.department) return alert("Department/Class is required for students");
+
+    const success = addUser({ ...formData, role: type });
+    if (success) {
+      alert(`${type} Added Successfully!`);
+      setFormData({ name: '', id: '', password: '', department: '' });
+    } else {
+      alert(`User ID "${formData.id}" already exists!`);
+    }
+  };
+
   return (
     <div className="card" style={{ padding: '2rem', maxWidth: '600px' }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>
-        Add New {type === 'student' ? 'Student' : 'Faculty'}
+        Add New {type === 'student' ? 'Student' : type === 'faculty' ? 'Faculty' : 'Admin'}
       </h2>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
         <div className="input-group">
           <label>Full Name</label>
-          <input type="text" />
+          <input type="text" name="name" value={formData.name} onChange={handleChange} />
         </div>
         <div className="input-group">
           <label>IMS Login ID</label>
-          <input type="text" placeholder={type === 'student' ? 'STU...' : 'FAC...'} />
+          <input type="text" name="id" value={formData.id} onChange={handleChange} placeholder={type === 'student' ? 'STU...' : 'FAC...'} />
         </div>
         <div className="input-group">
           <label>Password</label>
-          <input type="password" />
+          <input type="text" name="password" value={formData.password} onChange={handleChange} />
         </div>
-        <div className="input-group">
-          <label>Department</label>
-          <input type="text" />
-        </div>
+        {type !== 'admin' && (
+          <div className="input-group">
+            <label>Department / Class</label>
+            {type === 'student' ? (
+              <select name="department" value={formData.department} onChange={handleChange}>
+                <option value="">-- Select Class --</option>
+                {classes.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : (
+              <input type="text" name="department" value={formData.department} onChange={handleChange} placeholder="e.g. CSE Dept" />
+            )}
+          </div>
+        )}
       </div>
-      <button className="btn btn-success" style={{ backgroundColor: 'var(--success)', color: 'white', marginTop: '1rem', width: '100%' }} onClick={() => alert(`${type} Added Successfully!`)}>
+      <button className="btn btn-success" style={{ backgroundColor: 'var(--success)', color: 'white', marginTop: '1rem', width: '100%' }} onClick={handleAddUser}>
         Add {type}
       </button>
     </div>
@@ -144,6 +196,8 @@ export const ApprovalsView = () => {
 };
 
 export const SemResultsView = () => {
+  const { classes } = useClasses();
+
   return (
     <div>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Manage Semester Results</h2>
@@ -155,7 +209,9 @@ export const SemResultsView = () => {
           </div>
           <div className="input-group">
             <label>Select Class</label>
-            <select><option>B.E.ECE/A</option></select>
+            <select>
+              {classes.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
         </div>
       </div>
@@ -182,6 +238,56 @@ export const SemResultsView = () => {
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+};
+
+export const ManageClassesView = () => {
+  const { classes, addClass, deleteClass } = useClasses();
+  const [newClass, setNewClass] = useState('');
+
+  const handleAdd = () => {
+    if (newClass.trim()) {
+      addClass(newClass.trim());
+      setNewClass('');
+      alert('Class Added Successfully!');
+    }
+  };
+
+  return (
+    <div className="card" style={{ padding: '2rem', maxWidth: '600px' }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Manage Classes</h2>
+      <div className="input-group">
+        <label>Add New Class</label>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <input 
+            type="text" 
+            placeholder="e.g. B.E.ECE/A or vlsi a" 
+            value={newClass}
+            onChange={(e) => setNewClass(e.target.value)}
+          />
+          <button className="btn btn-primary" onClick={handleAdd}>Add</button>
+        </div>
+      </div>
+      
+      <div style={{ marginTop: '2rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>Existing Classes</h3>
+        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          {classes.map(c => (
+            <li key={c} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+              <span>{c}</span>
+              <button 
+                className="btn btn-danger" 
+                style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
+                onClick={() => { if(window.confirm(`Delete class ${c}?`)) deleteClass(c); }}
+              >
+                Delete
+              </button>
+            </li>
+          ))}
+          {classes.length === 0 && <p className="text-muted">No classes added yet.</p>}
+        </ul>
       </div>
     </div>
   );

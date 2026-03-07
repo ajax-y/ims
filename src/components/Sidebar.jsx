@@ -32,6 +32,8 @@ const adminLinks = [
   { id: 'teacher_tt', name: 'Teachers Time Table', icon: Calendar },
   { id: 'students', name: 'Student', icon: Users },
   { id: 'faculty', name: 'Faculty', icon: UserPlus },
+  { id: 'admins', name: 'Admin', icon: UserPlus },
+  { id: 'classes', name: 'Manage Classes', icon: Layers },
   { id: 'approvals', name: 'Leave / OD', icon: FileCheck },
   { id: 'results', name: 'Sem Results', icon: Award }
 ];

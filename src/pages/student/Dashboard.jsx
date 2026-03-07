@@ -13,12 +13,12 @@ function StudentDashboard({ user, onLogout }) {
     switch (activeTab) {
       case 'home': return <HomeView user={user} />;
       case 'timetable': return <TimeTableView />;
-      case 'attendance': return <AttendanceView />;
+      case 'attendance': return <AttendanceView user={user} />;
       case 'leave': return <LeaveView />;
-      case 'cat': return <CATMarks />;
-      case 'lab': return <LabMarks />;
-      case 'assignment': return <AssignmentMarks />;
-      case 'grade': return <GradeBook />;
+      case 'cat': return <CATMarks user={user} />;
+      case 'lab': return <LabMarks user={user} />;
+      case 'assignment': return <AssignmentMarks user={user} />;
+      case 'grade': return <GradeBook user={user} />;
       default: return <HomeView user={user} />;
     }
   };

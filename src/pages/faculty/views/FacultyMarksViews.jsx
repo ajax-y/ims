@@ -1,36 +1,28 @@
 import React, { useState } from 'react';
-
-const studentsData = [
-  { id: 'STU001', name: 'Alice Smith' },
-  { id: 'STU002', name: 'Bob Johnson' },
-  { id: 'STU003', name: 'Charlie Brown' },
-];
+import { useClasses } from '../../../context/ClassContext';
+import { useUser } from '../../../context/UserContext';
+import { useData } from '../../../context/DataContext';
 
 const MarksEntryTable = ({ title, columns }) => {
+  const { classes } = useClasses();
+  const { getStudentsByClass } = useUser();
+  const { getStudentMarks, updateMark } = useData();
+  
   const [selectedClass, setSelectedClass] = useState('');
-  const [marks, setMarks] = useState({});
+  const [students, setStudents] = useState([]);
 
   const handleClassChange = (e) => {
-    setSelectedClass(e.target.value);
-    const initial = {};
-    studentsData.forEach(s => {
-      initial[s.id] = columns.reduce((acc, col) => ({ ...acc, [col]: '' }), {});
-    });
-    setMarks(initial);
+    const cls = e.target.value;
+    setSelectedClass(cls);
+    setStudents(getStudentsByClass(cls));
   };
 
   const handleMarkChange = (id, col, val) => {
-    setMarks(prev => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        [col]: val
-      }
-    }));
+    updateMark(id, title, col, val);
   };
 
   const handleSubmit = () => {
-    alert(`${title} Saved Successfully!`);
+    alert(`${title} Saved Successfully to System!`);
   };
 
   return (
@@ -42,8 +34,7 @@ const MarksEntryTable = ({ title, columns }) => {
           <label>Select Class</label>
           <select value={selectedClass} onChange={handleClassChange}>
             <option value="">-- Choose Class --</option>
-            <option value="B.E.ECE/01/A">B.E.ECE/01/A</option>
-            <option value="B.E.CSE/02/B">B.E.CSE/02/B</option>
+            {classes.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       </div>
@@ -61,22 +52,28 @@ const MarksEntryTable = ({ title, columns }) => {
               </tr>
             </thead>
             <tbody>
-              {studentsData.map(student => (
+              {students.map(student => (
                 <tr key={student.id}>
-                  <td className="font-bold">{student.id}</td>
+                  <td className="font-bold">{student.id.toUpperCase()}</td>
                   <td>{student.name}</td>
-                  {columns.map(col => (
-                    <td key={col}>
-                      <input 
-                        type="number" 
-                        value={marks[student.id]?.[col] || ''}
-                        onChange={(e) => handleMarkChange(student.id, col, e.target.value)}
-                        style={{ width: '60px', padding: '0.25rem' }}
-                      />
-                    </td>
-                  ))}
+                  {columns.map(col => {
+                    const currentMark = getStudentMarks(student.id, title)[col] || '';
+                    return (
+                      <td key={col}>
+                        <input 
+                          type="number" 
+                          value={currentMark}
+                          onChange={(e) => handleMarkChange(student.id, col, e.target.value)}
+                          style={{ width: '60px', padding: '0.25rem' }}
+                        />
+                      </td>
+                    )
+                  })}
                 </tr>
               ))}
+              {students.length === 0 && (
+                <tr><td colSpan={columns.length + 2} className="text-center text-muted">No students found for this class.</td></tr>
+              )}
             </tbody>
           </table>
           <button className="btn btn-primary" style={{ marginTop: '1.5rem' }} onClick={handleSubmit}>

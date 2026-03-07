@@ -5,7 +5,8 @@ import {
   TimetableUploadView, 
   ManageUsersView, 
   ApprovalsView, 
-  SemResultsView 
+  SemResultsView,
+  ManageClassesView
 } from './views/AdminViews';
 
 function AdminDashboard({ user, onLogout }) {
@@ -18,8 +19,10 @@ function AdminDashboard({ user, onLogout }) {
       case 'teacher_tt': return <TimetableUploadView type="faculty" />;
       case 'students': return <ManageUsersView type="student" />;
       case 'faculty': return <ManageUsersView type="faculty" />;
+      case 'admins': return <ManageUsersView type="admin" />;
       case 'approvals': return <ApprovalsView />;
       case 'results': return <SemResultsView />;
+      case 'classes': return <ManageClassesView />;
       default: return <AdminHomeView />;
     }
   };

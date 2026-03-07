@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useData } from '../../../context/DataContext';
 
 const subjects = [
   { id: 1, code: 'CS101', name: 'Programming in C', faculty: 'Dr. Smith', m1: 85, m2: 90, m3: 75, m4: 20, m5: 88, tot: 358 },
@@ -14,91 +15,129 @@ const grades = [
   { id: 2, year: '2025-2026', sem: '01', code: 'CS102', name: 'Data Structures', grade: 'C', result: 'Fail', examMonth: 'Nov 2025' },
 ];
 
-export const CATMarks = () => (
-  <div>
-    <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>CAT Marks</h2>
-    <div className="card table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>S.No</th><th>Subject Code</th><th>Subject Name</th><th>Faculty Name</th>
-            <th>C01</th><th>C02</th><th>C03</th><th>C04</th><th>C05</th><th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {subjects.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
-              <td className={row.m1 < 25 ? 'text-danger font-bold' : ''}>{row.m1}</td>
-              <td className={row.m2 < 25 ? 'text-danger font-bold' : ''}>{row.m2}</td>
-              <td className={row.m3 < 25 ? 'text-danger font-bold' : ''}>{row.m3}</td>
-              <td className={row.m4 < 25 ? 'text-danger font-bold' : ''}>{row.m4}</td>
-              <td className={row.m5 < 25 ? 'text-danger font-bold' : ''}>{row.m5}</td>
-              <td className="font-bold">{row.tot}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
+export const CATMarks = ({ user }) => {
+  const { getStudentMarks } = useData();
+  const marks = getStudentMarks(user?.id, 'CAT Marks');
 
-export const LabMarks = () => (
-  <div>
-    <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>LAB Marks</h2>
-    <div className="card table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>S.No</th><th>Subject Code</th><th>Subject Name</th><th>Faculty Name</th>
-            <th>Cycle 1</th><th>Cycle 2</th><th>Cycle 3</th><th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {labs.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
-              <td className={row.c1 < 50 ? 'text-danger font-bold' : ''}>{row.c1}</td>
-              <td className={row.c2 < 50 ? 'text-danger font-bold' : ''}>{row.c2}</td>
-              <td className={row.c3 < 50 ? 'text-danger font-bold' : ''}>{row.c3}</td>
-              <td className="font-bold">{row.tot}</td>
+  return (
+    <div>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>CAT Marks</h2>
+      <div className="card table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>S.No</th><th>Subject Code</th><th>Subject Name</th><th>Faculty Name</th>
+              <th>C01</th><th>C02</th><th>C03</th><th>C04</th><th>C05</th><th>Total</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {subjects.map((row) => {
+              const m1 = parseInt(marks?.C01) || 0;
+              const m2 = parseInt(marks?.C02) || 0;
+              const m3 = parseInt(marks?.C03) || 0;
+              const m4 = parseInt(marks?.C04) || 0;
+              const m5 = parseInt(marks?.C05) || 0;
+              const tot = m1 + m2 + m3 + m4 + m5;
+              
+              return (
+                <tr key={row.id}>
+                  <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
+                  <td className={m1 > 0 && m1 < 25 ? 'text-danger font-bold' : ''}>{m1 || '-'}</td>
+                  <td className={m2 > 0 && m2 < 25 ? 'text-danger font-bold' : ''}>{m2 || '-'}</td>
+                  <td className={m3 > 0 && m3 < 25 ? 'text-danger font-bold' : ''}>{m3 || '-'}</td>
+                  <td className={m4 > 0 && m4 < 25 ? 'text-danger font-bold' : ''}>{m4 || '-'}</td>
+                  <td className={m5 > 0 && m5 < 25 ? 'text-danger font-bold' : ''}>{m5 || '-'}</td>
+                  <td className="font-bold">{tot || '-'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-);
+  );
+}
 
-export const AssignmentMarks = () => (
-  <div>
-    <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Assignment Marks</h2>
-    <div className="card table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>S.No</th><th>Subject Code</th><th>Subject Name</th><th>Faculty Name</th>
-            <th>A01</th><th>A02</th><th>A03</th><th>A04</th><th>A05</th><th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* using subject data but max score logic differs */}
-          {subjects.map((row) => (
-            <tr key={row.id}>
-              <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
-              <td className={(row.m1/10) < 5 ? 'text-danger font-bold' : ''}>{Math.round(row.m1/10)}</td>
-              <td className={(row.m2/10) < 5 ? 'text-danger font-bold' : ''}>{Math.round(row.m2/10)}</td>
-              <td className={(row.m3/10) < 5 ? 'text-danger font-bold' : ''}>{Math.round(row.m3/10)}</td>
-              <td className={(row.m4/10) < 5 ? 'text-danger font-bold' : ''}>{Math.round(row.m4/10)}</td>
-              <td className={(row.m5/10) < 5 ? 'text-danger font-bold' : ''}>{Math.round(row.m5/10)}</td>
-              <td className="font-bold">{Math.round(row.tot/10)}</td>
+export const LabMarks = ({ user }) => {
+  const { getStudentMarks } = useData();
+  const marks = getStudentMarks(user?.id, 'LAB Marks');
+
+  return (
+    <div>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>LAB Marks</h2>
+      <div className="card table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>S.No</th><th>Subject Code</th><th>Subject Name</th><th>Faculty Name</th>
+              <th>Cycle 1</th><th>Cycle 2</th><th>Cycle 3</th><th>Total</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {labs.map((row) => {
+              const c1 = parseInt(marks?.['Cycle 1']) || 0;
+              const c2 = parseInt(marks?.['Cycle 2']) || 0;
+              const c3 = parseInt(marks?.['Cycle 3']) || 0;
+              const tot = c1 + c2 + c3;
+              return (
+                <tr key={row.id}>
+                  <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
+                  <td className={c1 > 0 && c1 < 50 ? 'text-danger font-bold' : ''}>{c1 || '-'}</td>
+                  <td className={c2 > 0 && c2 < 50 ? 'text-danger font-bold' : ''}>{c2 || '-'}</td>
+                  <td className={c3 > 0 && c3 < 50 ? 'text-danger font-bold' : ''}>{c3 || '-'}</td>
+                  <td className="font-bold">{tot || '-'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-);
+  );
+}
+
+export const AssignmentMarks = ({ user }) => {
+  const { getStudentMarks } = useData();
+  const marks = getStudentMarks(user?.id, 'Assignment Marks');
+
+  return (
+    <div>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Assignment Marks</h2>
+      <div className="card table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>S.No</th><th>Subject Code</th><th>Subject Name</th><th>Faculty Name</th>
+              <th>A01</th><th>A02</th><th>A03</th><th>A04</th><th>A05</th><th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {subjects.map((row) => {
+              const a1 = parseInt(marks?.A01) || 0;
+              const a2 = parseInt(marks?.A02) || 0;
+              const a3 = parseInt(marks?.A03) || 0;
+              const a4 = parseInt(marks?.A04) || 0;
+              const a5 = parseInt(marks?.A05) || 0;
+              const tot = a1 + a2 + a3 + a4 + a5;
+              
+              return (
+                <tr key={row.id}>
+                  <td>{row.id}</td><td>{row.code}</td><td>{row.name}</td><td>{row.faculty}</td>
+                  <td className={a1 > 0 && a1 < 5 ? 'text-danger font-bold' : ''}>{a1 || '-'}</td>
+                  <td className={a2 > 0 && a2 < 5 ? 'text-danger font-bold' : ''}>{a2 || '-'}</td>
+                  <td className={a3 > 0 && a3 < 5 ? 'text-danger font-bold' : ''}>{a3 || '-'}</td>
+                  <td className={a4 > 0 && a4 < 5 ? 'text-danger font-bold' : ''}>{a4 || '-'}</td>
+                  <td className={a5 > 0 && a5 < 5 ? 'text-danger font-bold' : ''}>{a5 || '-'}</td>
+                  <td className="font-bold">{tot || '-'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 export const GradeBook = () => {
   const [sem, setSem] = useState('01');

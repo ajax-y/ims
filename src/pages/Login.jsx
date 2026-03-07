@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useUser } from '../context/UserContext';
 import './Login.css';
 
 function Login({ onLogin }) {
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const { loginUser } = useUser();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -15,22 +17,13 @@ function Login({ onLogin }) {
       return;
     }
 
-    // Role detection based on User ID prefix
-    let role = 'student';
-    if (userId.toLowerCase().startsWith('fac')) {
-      role = 'faculty';
-    } else if (userId.toLowerCase().startsWith('adm')) {
-      role = 'admin';
+    const user = loginUser(userId, password);
+    
+    if (user) {
+      onLogin(user);
+    } else {
+      setError('Invalid User ID or Password. Please try again.');
     }
-
-    // Mock Login Success
-    const user = {
-      id: userId,
-      name: userId.toUpperCase(),
-      role: role
-    };
-
-    onLogin(user);
   };
 
   return (

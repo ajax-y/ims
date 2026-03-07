@@ -1,31 +1,28 @@
-import React, { useState } from 'react';
-
-const studentsData = [
-  { id: 'STU001', name: 'Alice Smith' },
-  { id: 'STU002', name: 'Bob Johnson' },
-  { id: 'STU003', name: 'Charlie Brown' },
-];
+import React, { useState, useEffect } from 'react';
+import { useClasses } from '../../../context/ClassContext';
+import { useUser } from '../../../context/UserContext';
+import { useData } from '../../../context/DataContext';
 
 function StudentAttendanceView() {
+  const { classes } = useClasses();
+  const { getStudentsByClass } = useUser();
+  const { updateAttendance, getStudentAttendance } = useData();
+  
   const [selectedClass, setSelectedClass] = useState('');
-  const [attendance, setAttendance] = useState({});
+  const [students, setStudents] = useState([]);
 
   const handleClassChange = (e) => {
-    setSelectedClass(e.target.value);
-    // Reset attendance
-    const initial = {};
-    studentsData.forEach(s => initial[s.id] = 'Present');
-    setAttendance(initial);
+    const cls = e.target.value;
+    setSelectedClass(cls);
+    setStudents(getStudentsByClass(cls));
   };
 
   const markAll = (status) => {
-    const updated = {};
-    studentsData.forEach(s => updated[s.id] = status);
-    setAttendance(updated);
+    students.forEach(s => updateAttendance(s.id, status));
   };
 
   const toggleStudent = (id, status) => {
-    setAttendance(prev => ({ ...prev, [id]: status }));
+    updateAttendance(id, status);
   };
 
   const handleSubmit = () => {
@@ -41,8 +38,7 @@ function StudentAttendanceView() {
           <label>Select Class</label>
           <select value={selectedClass} onChange={handleClassChange}>
             <option value="">-- Choose Class --</option>
-            <option value="B.E.ECE/01/A">B.E.ECE/01/A</option>
-            <option value="B.E.CSE/02/B">B.E.CSE/02/B</option>
+            {classes.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       </div>
@@ -69,35 +65,41 @@ function StudentAttendanceView() {
                 </tr>
               </thead>
               <tbody>
-                {studentsData.map(student => (
-                  <tr key={student.id}>
-                    <td className="font-bold">{student.id}</td>
-                    <td>{student.name}</td>
-                    <td>
-                      <span className={attendance[student.id] === 'Present' ? 'text-success font-bold' : 'text-danger font-bold'}>
-                        {attendance[student.id]}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        <button 
-                          className="btn" 
-                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', backgroundColor: attendance[student.id] === 'Present' ? 'var(--success)' : '#e2e8f0', color: attendance[student.id] === 'Present' ? 'white' : 'var(--text-main)' }}
-                          onClick={() => toggleStudent(student.id, 'Present')}
-                        >
-                          Present
-                        </button>
-                        <button 
-                          className="btn" 
-                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', backgroundColor: attendance[student.id] === 'Absent' ? 'var(--danger)' : '#e2e8f0', color: attendance[student.id] === 'Absent' ? 'white' : 'var(--text-main)' }}
-                          onClick={() => toggleStudent(student.id, 'Absent')}
-                        >
-                          Absent
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {students.map(student => {
+                  const status = getStudentAttendance(student.id);
+                  return (
+                    <tr key={student.id}>
+                      <td className="font-bold">{student.id.toUpperCase()}</td>
+                      <td>{student.name}</td>
+                      <td>
+                        <span className={status === 'Present' ? 'text-success font-bold' : status === 'Absent' ? 'text-danger font-bold' : 'text-muted'}>
+                          {status}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button 
+                            className="btn" 
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', backgroundColor: status === 'Present' ? 'var(--success)' : '#e2e8f0', color: status === 'Present' ? 'white' : 'var(--text-main)' }}
+                            onClick={() => toggleStudent(student.id, 'Present')}
+                          >
+                            Present
+                          </button>
+                          <button 
+                            className="btn" 
+                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.875rem', backgroundColor: status === 'Absent' ? 'var(--danger)' : '#e2e8f0', color: status === 'Absent' ? 'white' : 'var(--text-main)' }}
+                            onClick={() => toggleStudent(student.id, 'Absent')}
+                          >
+                            Absent
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {students.length === 0 && (
+                  <tr><td colSpan="4" className="text-center text-muted">No students found for this class.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
