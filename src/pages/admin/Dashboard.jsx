@@ -8,6 +8,7 @@ import {
   SemResultsView,
   ManageClassesView
 } from './views/AdminViews';
+import FacultyAssignmentView from './views/FacultyAssignmentView';
 
 function AdminDashboard({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('home');
@@ -19,6 +20,7 @@ function AdminDashboard({ user, onLogout }) {
       case 'teacher_tt': return <TimetableUploadView type="faculty" />;
       case 'students': return <ManageUsersView type="student" />;
       case 'faculty': return <ManageUsersView type="faculty" />;
+      case 'class_assignment': return <FacultyAssignmentView />;
       case 'admins': return <ManageUsersView type="admin" />;
       case 'approvals': return <ApprovalsView />;
       case 'results': return <SemResultsView />;

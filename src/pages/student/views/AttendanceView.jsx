@@ -2,16 +2,20 @@ import React, { useState } from 'react';
 import { useData } from '../../../context/DataContext';
 
 const attendanceData = [
-  { id: 1, code: 'CS101', name: 'Programming in C', faculty: 'Dr. Smith', total: 40 },
-  { id: 2, code: 'CS102', name: 'Data Structures', faculty: 'Prof. John', total: 40 },
-  { id: 3, code: 'MA101', name: 'Engineering Math', faculty: 'Dr. Alan', total: 40 },
-  { id: 4, code: 'PH101', name: 'Physics', faculty: 'Dr. Banner', total: 40 },
-  { id: 5, code: 'GE101', name: 'English', faculty: 'Prof. Mary', total: 40 },
+  { id: 1, code: 'CS101', name: 'Programming in C', faculty: 'Dr. Smith' },
+  { id: 2, code: 'CS102', name: 'Data Structures', faculty: 'Prof. John' },
+  { id: 3, code: 'MA101', name: 'Engineering Math', faculty: 'Dr. Alan' },
+  { id: 4, code: 'PH101', name: 'Physics', faculty: 'Dr. Banner' },
+  { id: 5, code: 'GE101', name: 'English', faculty: 'Prof. Mary' },
 ];
 
 function AttendanceView({ user }) {
-  const { getStudentAttendance } = useData();
+  const { getStudentAttendanceStats } = useData();
   const [sem, setSem] = useState('01');
+  
+  // Globally fetches the single combined struct for demo simplicity
+  // In a real expanded app, each code would have its own key struct
+  const globalStats = getStudentAttendanceStats(user?.id);
 
   return (
     <div>
@@ -51,14 +55,18 @@ function AttendanceView({ user }) {
           </thead>
           <tbody>
             {attendanceData.map((row) => {
-              // Get actual global attendance if marked by faculty today, otherwise default to a random existing number for demo purposes
-              const globalStatus = getStudentAttendance(user?.id);
-              let attended = 30; // base fallback
+              // Simulated breakdown of global structural transaction stats 
+              // across all 5 subjects
+              const total = Math.ceil(globalStats.completedPeriods / 5);
               
-              if (globalStatus === 'Present') attended += 1;
-              if (globalStatus === 'Not Marked') attended = 0; // If they just joined, it's 0 until marked
+              // Simplistic division for attendance allocation display purposes
+              let attended = 0;
+              if (total > 0) {
+                 const overallPerc = globalStats.attendedPeriods / globalStats.completedPeriods;
+                 attended = Math.round(overallPerc * total);
+              }
 
-              const percentage = Math.round((attended / row.total) * 100) || 0;
+              const percentage = total > 0 ? Math.round((attended / total) * 100) : 0;
               const isLow = percentage < 75;
               
               return (
@@ -68,7 +76,7 @@ function AttendanceView({ user }) {
                   <td>{row.name}</td>
                   <td>{row.faculty}</td>
                   <td>{attended}</td>
-                  <td>{row.total}</td>
+                  <td>{total}</td>
                   <td className={isLow ? 'text-danger font-bold' : 'text-success font-bold'}>
                     {percentage}%
                   </td>

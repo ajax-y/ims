@@ -163,3 +163,42 @@ tr:hover td {
 .font-bold { font-weight: 700; }
 .text-sm { font-size: 0.875rem; }
 .text-muted { color: var(--text-muted); }
+
+/* UI Refinements for Progress Rings */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.progress-ring {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring-color, #007bff) var(--progress, 0%), var(--secondary) 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-top: 1rem;
+}
+
+.progress-ring.default-ring {
+  background: var(--secondary);
+}
+
+.progress-ring::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  background: var(--card-bg);
+  border-radius: 50%;
+}
+
+.progress-ring-text {
+  position: relative;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main);
+  z-index: 2;
+}

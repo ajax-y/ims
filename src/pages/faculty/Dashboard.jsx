@@ -15,8 +15,8 @@ function FacultyDashboard({ user, onLogout }) {
   const renderContent = () => {
     switch (activeTab) {
       case 'home': return <FacultyHomeView user={user} />;
-      case 'timetable': return <TimeTableView />; // Personal timetable
-      case 'student_attendance': return <StudentAttendanceView />;
+      case 'timetable': return <TimeTableView user={user} />; // Personal timetable
+      case 'student_attendance': return <StudentAttendanceView user={user} />;
       case 'cat': return <FacultyCATMarks />;
       case 'lab': return <FacultyLabMarks />;
       case 'assignment': return <FacultyAssignmentMarks />;

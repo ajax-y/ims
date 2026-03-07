@@ -1,4 +1,18 @@
 import React from 'react';
+import { useData } from '../../../context/DataContext';
+
+const LiveIcon = () => (
+  <span style={{
+    display: 'inline-block',
+    width: '8px',
+    height: '8px',
+    backgroundColor: '#10b981',
+    borderRadius: '50%',
+    marginLeft: '8px',
+    boxShadow: '0 0 0 rgba(16, 185, 129, 0.4)',
+    animation: 'pulse 2s infinite'
+  }} title="Live Sync"></span>
+);
 
 const CalendarCard = () => (
   <div className="card" style={{ padding: '1.5rem', marginTop: '2rem' }}>
@@ -20,6 +34,17 @@ const CalendarCard = () => (
 );
 
 function HomeView({ user }) {
+  const { getCGPA, getStudentAttendanceStats } = useData();
+
+  const cgpa = getCGPA(user?.id);
+  const attStats = getStudentAttendanceStats(user?.id);
+  
+  const attPerc = attStats.completedPeriods > 0 
+    ? Math.round((attStats.attendedPeriods / attStats.completedPeriods) * 100)
+    : 0;
+
+  const leavesTaken = attStats.completedPeriods - attStats.attendedPeriods;
+
   return (
     <div>
       <h2 style={{ fontSize: '1.875rem', fontWeight: '700', marginBottom: '0.5rem' }}>Hi, welcome back!</h2>
@@ -30,28 +55,44 @@ function HomeView({ user }) {
         gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
         gap: '1.5rem'
       }}>
-        {/* Green - CGPA */}
-        <div style={{ backgroundColor: 'var(--success)', color: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)' }}>
-          <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>Current CGPA</p>
-          <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>8.75</h3>
+        {/* Blue Progress Ring - CGPA */}
+        <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem', fontWeight: '500' }}>
+            Current CGPA <LiveIcon />
+          </p>
+          <div className="progress-ring" style={{ '--progress': `${(cgpa / 10) * 100}%` }}>
+            <span className="progress-ring-text">{cgpa}</span>
+          </div>
         </div>
 
         {/* Yellow/Amber - Arrears */}
-        <div style={{ backgroundColor: 'var(--warning)', color: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)' }}>
-          <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>Arrears in Hand</p>
-          <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>0</h3>
+        <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem', fontWeight: '500' }}>
+            Arrears in Hand
+          </p>
+          <div className="progress-ring default-ring">
+            <span className="progress-ring-text" style={{ color: 'var(--warning)' }}>0</span>
+          </div>
         </div>
 
-        {/* Orange - Avg Attendance */}
-        <div style={{ backgroundColor: 'var(--orange)', color: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)' }}>
-          <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>Average Attendance</p>
-          <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>88%</h3>
+        {/* Blue Progress Ring - Avg Attendance */}
+        <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem', fontWeight: '500' }}>
+            Average Attendance <LiveIcon />
+          </p>
+          <div className="progress-ring" style={{ '--progress': `${attPerc}%` }}>
+            <span className="progress-ring-text">{attPerc}%</span>
+          </div>
         </div>
 
-        {/* Red - Taken Leave */}
-        <div style={{ backgroundColor: 'var(--danger)', color: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)' }}>
-          <p style={{ fontSize: '1rem', opacity: 0.9, marginBottom: '0.5rem' }}>Taken Leave</p>
-          <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>4</h3>
+        {/* Blue Progress Ring - Taken Leave */}
+        <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1rem', fontWeight: '500' }}>
+            Taken Leave <LiveIcon />
+          </p>
+          <div className="progress-ring default-ring" style={{ '--progress': '100%', '--ring-color': 'var(--danger)' }}>
+            <span className="progress-ring-text" style={{ color: 'var(--danger)' }}>{leavesTaken}</span>
+          </div>
         </div>
       </div>
 
