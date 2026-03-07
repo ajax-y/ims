@@ -1,33 +1,33 @@
-# IMS - Inventory Management System
+# IMS - College Management System
 
-A streamlined solution for managing stock, tracking assets, and maintaining inventory records efficiently. This project was developed to demonstrate a modern approach to inventory control, focusing on simplicity and ease of use.
+A specialized administrative tool designed to manage student and faculty records at **Rajalakshmi Institute of Technology (RIT), Chennai**. This system serves as a central hub for administrators to organize institutional data efficiently.
 
 ## 🚀 Overview
-The **IMS** project is designed to help users track items, manage quantities, and monitor stock levels in real-time. Whether for small-scale personal use or a hostel-based environment, this system provides the core CRUD (Create, Read, Update, Delete) functionalities required for effective management.
+The **IMS** project (Institutional Management System) streamlines the administrative workload by providing a structured database for managing the diverse profiles of students and faculty members. It is built to handle the specific organizational needs of a college environment.
 
 ## 🛠️ Features
-* **Item Tracking:** Add, edit, and remove inventory items.
-* **Quantity Management:** Real-time updates to stock levels.
-* **Search & Filter:** Quickly find items within the database.
-* **Clean Interface:** Minimalist design for fast navigation.
+* **Student Database:** Comprehensive management of student profiles, enrollment details, and departmental tracking.
+* **Faculty Records:** Easy access to faculty information, designations, and academic departments.
+* **Admin Control:** Secure management interface for adding, updating, and removing records.
+* **RIT-Centric Design:** Tailored for the administrative structure of Rajalakshmi Institute of Technology.
 
 ## 🤖 Built with AI & Human Effort
-This project was created through a collaborative process between **AI** and human intelligence. 
+This project is a product of human-AI collaboration.
 
-* **The AI:** Utilizing **Google Antigravity**, the codebase was structured, written, and refined.
-* **The Developer:** This project was driven by my specific **prompts, logic, and oversight**. I guided the AI through the implementation details, ensuring the final output met the project's functional requirements and architectural standards.
+* **The AI:** Utilizing **Google Antigravity**, the codebase was structured and refined.
+* **The Developer:** This project was created through my **direct prompts and logic**. I guided the AI to ensure the system met the specific requirements of a college management tool, overseeing the development from concept to final code.
 
 ## 💻 About the Developer
-I am a 19-year-old **Electronics and Communication Engineering (ECE)** student. I am passionate about bridging the gap between hardware logic and software efficiency, exploring how AI can accelerate the development of robust systems.
+I am a 19-year-old **Electronics and Communication Engineering (ECE)** student at **Rajalakshmi Institute of Technology**. I am passionate about leveraging software solutions to solve real-world organizational challenges.
 
-* **Academic Background:** ECE Student (Year 1/2)
+* **Academic Background:** ECE Student, RIT Chennai.
 * **Technical Focus:** Mastering **C Programming** and **Python**.
-* **Active Projects:** Developing **Zyrooos FLOW** and this **Inventory Management System**.
-* **Interests:** Embedded systems, recursive logic, and AI-driven software architecture.
+* **Active Projects:** Developing **Zyrooos FLOW** and this **IMS** (College Management System).
+* **Interests:** Software architecture, embedded systems, and AI-driven development.
 
 ## ⚙️ Requirements
 * **Python 3.x**
-* (List any additional libraries used, e.g., `sqlite3`, `Flask`, or `Tkinter`)
+* (Include other dependencies like `sqlite3` or `pandas` if applicable)
 
 ## 📝 How to Run
 1.  **Clone the repository:**
