@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><title>Hash</title></head>
+<body>
+<script>
+async function getHash() { 
+  const msgUint8 = new TextEncoder().encode("12345_ims_secure_salt_v2"); 
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8); 
+  const hashArray = Array.from(new Uint8Array(hashBuffer)); 
+  const hashStr = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  document.body.innerHTML = `<div id="hash_result">${hashStr}</div>`;
+} 
+getHash();
+</script>
+</body>
+</html>

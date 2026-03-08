@@ -84,22 +84,7 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
           </button>
 
           {isNotifOpen && (
-            <div style={{
-              position: 'absolute',
-              top: 'calc(100% + 10px)',
-              right: '-10px',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: 'var(--shadow-lg)',
-              border: '1px solid var(--border)',
-              width: '300px',
-              maxHeight: '400px',
-              overflowY: 'auto',
-              zIndex: 1000,
-              padding: '1rem'
-            }}
-            className="fade-in"
-            >
+            <div className="fade-in notification-dropdown">
               <h3 style={{ fontSize: '1rem', fontWeight: '600', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>Announcements</h3>
               {announcements.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', margin: '2rem 0' }}>No new announcements</p>

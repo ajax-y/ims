@@ -237,4 +237,25 @@ tr:hover td {
   .mobile-p-1 {
     padding: 1rem !important;
   }
+  
+  .notification-dropdown {
+    width: 90vw;
+    right: -50px;
+    max-width: 350px;
+  }
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -10px;
+  background-color: var(--card-bg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+  padding: 1rem;
 }

@@ -29,26 +29,21 @@ export function UserProvider({ children }) {
         console.error("Failed parsing users", e);
       }
     }
-    return []; // Start empty so we can safely compute default hashes asynchronously
+    // Return pre-compiled hashed defaults if nothing in localStorage
+    const defaultHashedPass = 'b5ef1b8c42abdd1c1dd339a2ae8358ed88adcdb251c000af735f069e62213c49';
+    return [
+      { id: 'aden', password: defaultHashedPass, name: 'Aden Admin', role: 'admin' },
+      { id: 'ajay', password: defaultHashedPass, name: 'Ajay', role: 'faculty' },
+      { id: 'aldrin', password: defaultHashedPass, name: 'Aldrin', role: 'student', department: 'B.E.ECE/01/A' },
+      { id: 'kaviya', password: defaultHashedPass, name: 'Kaviya', role: 'student', department: 'B.E.CSE/02/B' }
+    ];
   });
 
   useEffect(() => {
-    const initDefaultsAndSave = async () => {
-      // If empty AND nothing saved, construct defaults with async SHA-256
-      if (users.length === 0 && !localStorage.getItem('ims_users')) {
-        const defaultHashedPass = await hashPassword('12345');
-        const defaults = [
-          { id: 'aden', password: defaultHashedPass, name: 'Aden Admin', role: 'admin' },
-          { id: 'ajay', password: defaultHashedPass, name: 'Ajay', role: 'faculty' },
-          { id: 'aldrin', password: defaultHashedPass, name: 'Aldrin', role: 'student', department: 'B.E.ECE/01/A' },
-          { id: 'kaviya', password: defaultHashedPass, name: 'Kaviya', role: 'student', department: 'B.E.CSE/02/B' }
-        ];
-        setUsers(defaults);
-      } else if (users.length > 0) {
-        localStorage.setItem('ims_users', JSON.stringify(users));
-      }
-    };
-    initDefaultsAndSave();
+    // Ensure the users are saved to local storage on initial boot
+    if (!localStorage.getItem('ims_users')) {
+      localStorage.setItem('ims_users', JSON.stringify(users));
+    }
   }, [users]);
 
   // Authenticate user
@@ -96,7 +91,7 @@ export function UserProvider({ children }) {
   };
 
   const resetToDefaults = async () => {
-    const defaultHashedPass = await hashPassword('12345');
+    const defaultHashedPass = 'b5ef1b8c42abdd1c1dd339a2ae8358ed88adcdb251c000af735f069e62213c49';
     setUsers([
       { id: 'aden', password: defaultHashedPass, name: 'Aden Admin', role: 'admin' },
       { id: 'ajay', password: defaultHashedPass, name: 'Ajay', role: 'faculty' },
