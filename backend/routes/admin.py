@@ -4,7 +4,7 @@ import pandas as pd
 import io
 import math
 
-from .. import models, schemas, database, deps, utils
+import models, schemas, database, deps, utils
 
 router = APIRouter(
     prefix="/admin",

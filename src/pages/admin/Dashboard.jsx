@@ -6,7 +6,8 @@ import {
   ManageUsersView, 
   ApprovalsView, 
   SemResultsView,
-  ManageClassesView
+  ManageClassesView,
+  ManageAnnouncementsView
 } from './views/AdminViews';
 import FacultyAssignmentView from './views/FacultyAssignmentView';
 import ProfileView from '../../components/ProfileView';
@@ -17,6 +18,7 @@ function AdminDashboard({ user, onLogout }) {
   const renderContent = () => {
     switch (activeTab) {
       case 'home': return <AdminHomeView />;
+      case 'announcements': return <ManageAnnouncementsView />;
       case 'student_tt': return <TimetableUploadView type="student" />;
       case 'teacher_tt': return <TimetableUploadView type="faculty" />;
       case 'students': return <ManageUsersView type="student" />;

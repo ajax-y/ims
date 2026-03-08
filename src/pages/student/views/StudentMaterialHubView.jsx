@@ -26,16 +26,16 @@ const StudentMaterialHubView = ({ user }) => {
       
       if (response.ok) {
         const data = await response.json();
-        // The backend model has: title, description, url, category, uploaded_by
-        // We filter by category mapping to student's class
         const filtered = data.filter(m => m.category === studentClassId);
         setMaterials(filtered);
       } else {
-        setMaterials([]);
+        throw new Error('API Error');
       }
     } catch (err) {
-      console.error('Error fetching materials:', err);
-      setMaterials([]);
+      console.warn('API down, using local mock materials');
+      const allSaved = JSON.parse(localStorage.getItem('ims_mock_materials') || '[]');
+      const filtered = allSaved.filter(m => m.category === studentClassId);
+      setMaterials(filtered);
     }
     setLoading(false);
   };
@@ -78,7 +78,7 @@ const StudentMaterialHubView = ({ user }) => {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+        <div className="grid-mobile-1col" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
           {materials.filter(m => 
             (m.title && m.title.toLowerCase().includes(searchQuery.toLowerCase())) || 
             (m.description && m.description.toLowerCase().includes(searchQuery.toLowerCase()))

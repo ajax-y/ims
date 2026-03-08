@@ -45,7 +45,7 @@ export const AdminHomeView = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+      <div className="mobile-wrap gap-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
         <h2 style={{ fontSize: '1.875rem', fontWeight: '700' }}>Admin Dashboard</h2>
         <button className="btn btn-danger" onClick={handleClearAll}>
           ⚠️ Nuclear Reset (Clear All Data)
@@ -219,18 +219,18 @@ export const ManageUsersView = ({ type }) => {
         <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
           Columns needed: username, name, password, role, department, year, section
         </p>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-          <div className="input-group" style={{ margin: 0, flex: 1 }}>
-            <input type="file" accept=".xlsx, .xls" onChange={e => setBulkFile(e.target.files[0])} />
+        <div className="flex-mobile-col" style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+          <div className="input-group mobile-w-full" style={{ margin: 0, flex: 1 }}>
+            <input type="file" accept=".xlsx, .xls" onChange={e => setBulkFile(e.target.files[0])} className="mobile-w-full" />
           </div>
-          <button className="btn btn-primary" onClick={handleBulkUpload} disabled={bulkLoading}>
+          <button className="btn btn-primary mobile-w-full" onClick={handleBulkUpload} disabled={bulkLoading}>
             {bulkLoading ? 'Uploading...' : 'Import Users'}
           </button>
         </div>
       </div>
 
       <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>Manual Add / Edit</h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      <div className="grid-mobile-1col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
         <div className="input-group">
           <label>Full Name</label>
           <input type="text" name="name" value={formData.name} onChange={handleChange} />
@@ -268,8 +268,8 @@ export const ManageUsersView = ({ type }) => {
           <input type="text" name="mobileNumber" value={formData.mobileNumber} onChange={handleChange} placeholder="10-digit number" maxLength="10" required />
         </div>
       </div>
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-        <button className="btn btn-success" style={{ backgroundColor: 'var(--success)', color: 'white', flex: 1 }} onClick={handleAddUser}>
+      <div className="flex-mobile-col" style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+        <button className="btn btn-success mobile-w-full" style={{ backgroundColor: 'var(--success)', color: 'white', flex: 1 }} onClick={handleAddUser}>
           {isEditing ? `Save Changes` : `Add ${type}`}
         </button>
         {isEditing && (
@@ -361,13 +361,23 @@ export const ManageUsersView = ({ type }) => {
 };
 
 export const ApprovalsView = () => {
-  const [requests, setRequests] = useState([
-    { id: 1, name: 'Alice Smith (STU001)', type: 'Leave', dates: '12 Nov - 14 Nov', reason: 'Fever' },
-    { id: 2, name: 'Dr. John (FAC012)', type: 'OD', dates: '15 Nov - 16 Nov', reason: 'Conference' },
-  ]);
+  const [requests, setRequests] = useState(() => {
+    const saved = localStorage.getItem('ims_leave_requests');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error("Failed parsing leave requests", e);
+      }
+    }
+    return []; // Start empty unless applications exist
+  });
 
   const handleAction = (id, action) => {
-    setRequests(requests.filter(req => req.id !== id));
+    const updated = requests.filter(req => req.id !== id);
+    setRequests(updated);
+    localStorage.setItem('ims_leave_requests', JSON.stringify(updated));
     alert(`${action} successfully.`);
   };
 
@@ -385,7 +395,7 @@ export const ApprovalsView = () => {
             ) : requests.map(req => (
               <tr key={req.id}>
                 <td className="font-bold">{req.name}</td>
-                <td><span style={{ padding: '0.25rem 0.5rem', backgroundColor: req.type==='OD' ? '#dbeafe' : '#fef3c7', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600' }}>{req.type}</span></td>
+                <td><span style={{ padding: '0.25rem 0.5rem', backgroundColor: req.type==='OD' || req.type==='od' ? '#dbeafe' : '#fef3c7', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600', textTransform: 'capitalize' }}>{req.type}</span></td>
                 <td>{req.dates}</td>
                 <td>{req.reason}</td>
                 <td><a href="#" className="text-primary" style={{ textDecoration: 'underline' }}>View Proof</a></td>
@@ -442,11 +452,11 @@ export const SemResultsView = () => {
         <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
           Columns needed: student_username, semester, gpa, total_credits
         </p>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-          <div className="input-group" style={{ margin: 0, flex: 1 }}>
-            <input type="file" accept=".xlsx, .xls" onChange={e => setFile(e.target.files[0])} />
+        <div className="flex-mobile-col" style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+          <div className="input-group mobile-w-full" style={{ margin: 0, flex: 1 }}>
+            <input type="file" accept=".xlsx, .xls" onChange={e => setFile(e.target.files[0])} className="mobile-w-full" />
           </div>
-          <button className="btn btn-primary" onClick={handleUpload} disabled={loading}>
+          <button className="btn btn-primary mobile-w-full" onClick={handleUpload} disabled={loading}>
             {loading ? 'Uploading...' : 'Import Results'}
           </button>
         </div>
@@ -498,7 +508,7 @@ export const ManageClassesView = () => {
         <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Departments</h3>
         <div className="input-group">
           <label>Add New Department</label>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="flex-mobile-col" style={{ display: 'flex', gap: '1rem' }}>
             <input 
               type="text" 
               placeholder="e.g. IT, BIOTECH" 
@@ -534,7 +544,7 @@ export const ManageClassesView = () => {
         <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Classes</h3>
         <div className="input-group">
           <label>Add New Class</label>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="flex-mobile-col" style={{ display: 'flex', gap: '1rem' }}>
             <input 
               type="text" 
               placeholder="e.g. B.E.ECE/A" 
@@ -563,6 +573,78 @@ export const ManageClassesView = () => {
             {classes.length === 0 && <p className="text-muted" style={{ fontSize: '0.9rem' }}>No classes added yet.</p>}
           </ul>
         </div>
+      </div>
+    </div>
+  );
+};
+
+export const ManageAnnouncementsView = () => {
+  const [announcements, setAnnouncements] = useState(() => {
+    return JSON.parse(localStorage.getItem('ims_announcements') || '[]');
+  });
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handlePost = (e) => {
+    e.preventDefault();
+    if (!title || !message) return alert("Title and message required");
+    
+    const newAnnouncement = {
+      id: Date.now(),
+      title,
+      message,
+      date: new Date().toISOString()
+    };
+    const updated = [newAnnouncement, ...announcements];
+    setAnnouncements(updated);
+    localStorage.setItem('ims_announcements', JSON.stringify(updated));
+    setTitle('');
+    setMessage('');
+    alert("Announcement posted successfully!");
+  };
+
+  const handleDelete = (id) => {
+    if (!window.confirm("Delete announcement?")) return;
+    const updated = announcements.filter(a => a.id !== id);
+    setAnnouncements(updated);
+    localStorage.setItem('ims_announcements', JSON.stringify(updated));
+  };
+
+  return (
+    <div style={{ maxWidth: '600px' }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Announcements</h2>
+      
+      <form className="card" onSubmit={handlePost} style={{ padding: '2rem', marginBottom: '2rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>Post New Announcement</h3>
+        <div className="input-group">
+          <label>Title</label>
+          <input type="text" value={title} onChange={e => setTitle(e.target.value)} required placeholder="e.g. Holiday Notice" />
+        </div>
+        <div className="input-group">
+          <label>Message</label>
+          <textarea rows="4" value={message} onChange={e => setMessage(e.target.value)} required placeholder="Type your announcement..."></textarea>
+        </div>
+        <button type="submit" className="btn btn-primary">Post Announcement</button>
+      </form>
+
+      <div className="card" style={{ padding: '2rem' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>Recent Announcements</h3>
+        {announcements.length === 0 ? (
+          <p className="text-muted">No announcements posted.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {announcements.map(a => (
+              <div key={a.id} style={{ padding: '1rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                  <h4 style={{ fontWeight: '600' }}>{a.title}</h4>
+                  <button onClick={() => handleDelete(a.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.8rem' }}>Delete</button>
+                </div>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{a.message}</p>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(a.date).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

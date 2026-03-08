@@ -202,3 +202,36 @@ tr:hover td {
   color: var(--text-main);
   z-index: 2;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .flex-mobile-col {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .flex-mobile-col-start {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  
+  .mobile-w-full {
+    width: 100% !important;
+  }
+  
+  .mobile-mt-2 {
+    margin-top: 0.5rem !important;
+  }
+  
+  .mobile-wrap {
+    flex-wrap: wrap !important;
+  }
+  
+  .grid-mobile-1col {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .mobile-p-1 {
+    padding: 1rem !important;
+  }
+}

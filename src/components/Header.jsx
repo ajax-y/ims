@@ -5,10 +5,22 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+  const notifRef = useRef(null);
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('ims_announcements') || '[]');
+    setAnnouncements(saved);
+  }, [isNotifOpen]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setIsNotifOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -43,32 +55,68 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
           <Menu size={24} color="var(--text-main)" />
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '-0.5px' }}>
+          <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
             IMS Portal
           </span>
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        <button 
-          onClick={() => {
-            // Trigger a manual poll or pop a message by dispatching an event that NotificationToast can listen to if needed.
-            // For now, we'll just show an alert since it's already polling in the background.
-            // alert('Notifications are up to date.');
-          }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}
-        >
-          <Bell size={20} color="var(--text-muted)" className="hover:text-primary transition-colors" />
-          <span style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            width: '8px',
-            height: '8px',
-            backgroundColor: 'var(--danger)',
-            borderRadius: '50%'
-          }}></span>
-        </button>
+        
+        {/* NOTIFICATIONS DROPDOWN */}
+        <div style={{ position: 'relative' }} ref={notifRef}>
+          <button 
+            onClick={() => setIsNotifOpen(!isNotifOpen)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '0.5rem' }}
+          >
+            <Bell size={20} color="var(--text-muted)" className="hover:text-primary transition-colors" />
+            {announcements.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                width: '8px',
+                height: '8px',
+                backgroundColor: 'var(--danger)',
+                borderRadius: '50%'
+              }}></span>
+            )}
+          </button>
+
+          {isNotifOpen && (
+            <div style={{
+              position: 'absolute',
+              top: 'calc(100% + 10px)',
+              right: '-10px',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: 'var(--radius-md)',
+              boxShadow: 'var(--shadow-lg)',
+              border: '1px solid var(--border)',
+              width: '300px',
+              maxHeight: '400px',
+              overflowY: 'auto',
+              zIndex: 1000,
+              padding: '1rem'
+            }}
+            className="fade-in"
+            >
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>Announcements</h3>
+              {announcements.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', margin: '2rem 0' }}>No new announcements</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {announcements.map((a) => (
+                    <div key={a.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+                      <h4 style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.25rem' }}>{a.title}</h4>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>{a.message}</p>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(a.date).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button 

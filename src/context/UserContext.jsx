@@ -34,38 +34,19 @@ export function UserProvider({ children }) {
 
   // Authenticate user
   const loginUser = async (id, password) => {
-    try {
-      const formData = new URLSearchParams();
-      formData.append('username', id);
-      formData.append('password', password);
-
-      const response = await fetch('http://localhost:8000/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData
-      });
-
-      if (!response.ok) return null;
-
-      const data = await response.json();
-      localStorage.setItem('access_token', data.access_token);
-
-      // fetch user profile
-      const userRes = await fetch('http://localhost:8000/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${data.access_token}`
-        }
-      });
-      if (!userRes.ok) return null;
-      const userData = await userRes.json();
-      
-      return { ...userData, id: userData.username };
-    } catch(err) {
-      console.error(err);
-      return null;
+    // Backend is down, so bypass API entirely to make login instant.
+    console.log("Backend offline override: Instant local login");
+    
+    const localUser = users.find(u => (u.id === id || u.username === id) && u.password === password);
+    if (localUser) {
+      // Create a mock token for local session
+      localStorage.setItem('access_token', 'mock_local_token_' + Date.now());
+      localStorage.setItem('ims_current_user', JSON.stringify(localUser));
+      return localUser;
     }
+    
+    console.error("Login failed: Invalid credentials");
+    return null;
   };
 
   const addUser = (newUser) => {

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import timedelta
 
-from .. import models, schemas, utils, database, deps
+import models, schemas, utils, database, deps
 
 router = APIRouter(
     prefix="/auth",
@@ -33,13 +33,22 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_d
 
 @router.post("/login", response_model=schemas.Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+    print(f"Login attempt for user: {form_data.username}")
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    
+    if not user:
+        print(f"Login failed: User {form_data.username} not found")
+    elif not utils.verify_password(form_data.password, user.hashed_password):
+        print(f"Login failed: Incorrect password for user {form_data.username}")
+    
     if not user or not utils.verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    print(f"Login successful for user: {form_data.username}")
     
     access_token_expires = timedelta(minutes=utils.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = utils.create_access_token(

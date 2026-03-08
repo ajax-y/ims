@@ -50,10 +50,19 @@ function App() {
             const data = await res.json();
             setCurrentUser({ ...data, id: data.username });
           } else {
+            // API is up but token is invalid
             localStorage.removeItem('access_token');
+            localStorage.removeItem('ims_current_user');
           }
         } catch (err) {
-          console.error("Session verification failed", err);
+          console.error("Session verification failed, applying offline fallback", err);
+          // Fallback to local user state if API is completely unreachable
+          const localStoredUser = JSON.parse(localStorage.getItem('ims_current_user') || 'null');
+          if (localStoredUser) {
+            setCurrentUser(localStoredUser);
+          } else {
+            localStorage.removeItem('access_token');
+          }
         }
       }
       setLoading(false);
@@ -69,6 +78,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
+    localStorage.removeItem('ims_current_user');
     setCurrentUser(null);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   };

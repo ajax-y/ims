@@ -22,7 +22,7 @@ function FacultyDashboard({ user, onLogout }) {
       case 'cat': return <FacultyCATMarks />;
       case 'lab': return <FacultyLabMarks />;
       case 'assignment': return <FacultyAssignmentMarks />;
-      case 'leave': return <LeaveView />; // Apply leave
+      case 'leave': return <LeaveView user={user} />; // Apply leave
       case 'material_hub': return <FacultyMaterialHubView user={user} />;
       case 'profile': return <ProfileView user={user} />;
       default: return <FacultyHomeView user={user} />;

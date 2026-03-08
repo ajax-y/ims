@@ -150,8 +150,8 @@ export const GradeBook = ({ user }) => {
     <div>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Grade Book</h2>
       
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '2rem' }}>
-        <div className="input-group" style={{ marginBottom: 0 }}>
+      <div className="flex-mobile-col" style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '2rem' }}>
+        <div className="input-group mobile-w-full" style={{ marginBottom: 0, flex: 1 }}>
           <label>Semester</label>
           <select value={sem} onChange={(e) => { setSem(e.target.value); setShow(false); }}>
             <option value="01">Semester 1 (Year 1)</option>
@@ -164,7 +164,7 @@ export const GradeBook = ({ user }) => {
             <option value="08">Semester 8 (Year 4)</option>
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => setShow(true)}>Submit</button>
+        <button className="btn btn-primary mobile-w-full" onClick={() => setShow(true)}>Submit</button>
       </div>
 
       {show && (

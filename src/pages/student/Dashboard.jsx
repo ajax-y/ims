@@ -16,7 +16,7 @@ function StudentDashboard({ user, onLogout }) {
       case 'home': return <HomeView user={user} />;
       case 'timetable': return <TimeTableView />;
       case 'attendance': return <AttendanceView user={user} />;
-      case 'leave': return <LeaveView />;
+      case 'leave': return <LeaveView user={user} />;
       case 'cat': return <CATMarks user={user} />;
       case 'lab': return <LabMarks user={user} />;
       case 'assignment': return <AssignmentMarks user={user} />;

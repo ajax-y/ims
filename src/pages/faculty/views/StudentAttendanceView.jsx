@@ -112,9 +112,9 @@ function StudentAttendanceView({ user }) {
 
       <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          <div className="input-group" style={{ maxWidth: '300px', margin: 0 }}>
+          <div className="input-group mobile-w-full" style={{ maxWidth: '100%', margin: 0 }}>
             <label>Select Assigned Class</label>
-            <select value={selectedClass} onChange={handleClassChange}>
+            <select value={selectedClass} onChange={handleClassChange} className="mobile-w-full">
               <option value="">-- Choose Class --</option>
               {assignments.map(a => (
                 <option key={a.id} value={a.assignedClassNode}>{a.assignedClassNode} ({a.subject})</option>
@@ -132,11 +132,11 @@ function StudentAttendanceView({ user }) {
 
       {selectedClass && (
         <div className="card" style={{ padding: '1.5rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-            <button className="btn btn-primary" style={{ backgroundColor: 'var(--success)' }} onClick={() => markAll(true)}>
+          <div className="flex-mobile-col" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+            <button className="btn btn-primary mobile-w-full" style={{ backgroundColor: 'var(--success)' }} onClick={() => markAll(true)}>
               Mark All Present
             </button>
-            <button className="btn btn-danger" onClick={() => markAll(false)}>
+            <button className="btn btn-danger mobile-w-full" onClick={() => markAll(false)}>
               Mark All Absent
             </button>
           </div>

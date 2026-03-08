@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import math
 
-from .. import models, schemas, database, deps
+import models, schemas, database, deps
 
 router = APIRouter(
     prefix="/attendance",

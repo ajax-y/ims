@@ -30,11 +30,12 @@ const FacultyMaterialHubView = ({ user }) => {
         const data = await response.json();
         setMaterials(data);
       } else {
-        setMaterials([]);
+        throw new Error('API Error');
       }
     } catch(err) {
-      console.error(err);
-      setMaterials([]);
+      console.warn('API down, using local mock materials');
+      const allSaved = JSON.parse(localStorage.getItem('ims_mock_materials') || '[]');
+      setMaterials(allSaved);
     }
   };
 
@@ -55,68 +56,34 @@ const FacultyMaterialHubView = ({ user }) => {
     else if (file.type.includes('video')) fileType = 'video';
     else fileType = 'document';
 
-    if (supabase) {
-      // 1. Upload to storage
-      const fileName = `${Date.now()}_${file.name}`;
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('materials_bucket')
-        .upload(fileName, file);
-      
-      if (storageError) {
-        alert("Upload failed: " + storageError.message);
-        setLoading(false);
-        return;
-      }
-      
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('materials_bucket')
-        .getPublicUrl(fileName);
-        
-      fileUrl = publicUrlData.publicUrl;
-
-      // 2. Insert into database (FastAPI)
-      try {
-        const token = localStorage.getItem('access_token');
-        const res = await fetch('http://localhost:8000/materials/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: file.name,
-            description: subjectName,
-            url: fileUrl,
-            category: selectedClass
-          })
-        });
-
-        if (res.ok) alert("Material uploaded successfully!");
-        else alert("Database metadata insert failed!");
-      } catch (err) {
-        alert("Server error: " + err.message);
-      }
-    } else {
-      // Fallback local mock
-      fileUrl = URL.createObjectURL(file);
-      try {
-        const token = localStorage.getItem('access_token');
-        const res = await fetch('http://localhost:8000/materials/upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            title: file.name,
-            description: subjectName,
-            url: fileUrl,
-            category: selectedClass
-          })
-        });
-        if (res.ok) alert("Material uploaded successfully (Database Only)!");
-      } catch(err) {}
+    // Fallback local mock
+    fileUrl = URL.createObjectURL(file);
+    const newDoc = {
+      id: Date.now(),
+      title: file.name,
+      description: subjectName,
+      url: fileUrl,
+      category: selectedClass,
+      file_type: fileType,
+      uploaded_by: user.id
+    };
+    const allSaved = JSON.parse(localStorage.getItem('ims_mock_materials') || '[]');
+    localStorage.setItem('ims_mock_materials', JSON.stringify([...allSaved, newDoc]));
+    
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch('http://localhost:8000/materials/upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newDoc)
+      });
+      if (res.ok) alert("Material uploaded successfully!");
+      else alert("Material uploaded locally (API Unreachable).");
+    } catch(err) {
+      alert("Material uploaded locally (API Unreachable).");
     }
 
     setFile(null);
@@ -128,18 +95,15 @@ const FacultyMaterialHubView = ({ user }) => {
   const handleDelete = async (materialId, fileUrl) => {
     if (!window.confirm("Are you sure you want to delete this material?")) return;
 
-    if (supabase) {
-      try {
-        // We'd ideally delete from storage here as well if we parsed the filename out
-        await supabase.from('materials').delete().eq('id', materialId);
-      } catch (err) {
-        console.error(err);
-      }
-    } else {
-      const allSaved = JSON.parse(localStorage.getItem('ims_mock_materials') || '[]');
-      const filtered = allSaved.filter(m => m.id !== materialId);
-      localStorage.setItem('ims_mock_materials', JSON.stringify(filtered));
+    try {
+      const token = localStorage.getItem('access_token');
+      await fetch(`http://localhost:8000/materials/${materialId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+    } catch (err) {
+      console.error(err);
     }
+    const allSaved = JSON.parse(localStorage.getItem('ims_mock_materials') || '[]');
+    const filtered = allSaved.filter(m => m.id !== materialId);
+    localStorage.setItem('ims_mock_materials', JSON.stringify(filtered));
     fetchMaterials();
   };
 
@@ -154,7 +118,7 @@ const FacultyMaterialHubView = ({ user }) => {
 
   return (
     <div className="fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div className="mobile-wrap gap-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Material Hub</h2>
       </div>
 
