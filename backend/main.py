@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import models
 from database import engine
-from routes import auth, attendance, materials, notifications
+from routes import auth, attendance, materials, notifications, admin
 
 # Create the database tables
 models.Base.metadata.create_all(bind=engine)
@@ -21,6 +21,7 @@ app.include_router(auth.router)
 app.include_router(attendance.router)
 app.include_router(materials.router)
 app.include_router(notifications.router)
+app.include_router(admin.router)
 
 @app.get("/")
 def read_root():

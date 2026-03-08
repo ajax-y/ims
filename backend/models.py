@@ -16,7 +16,9 @@ class User(Base):
     year = Column(Integer, nullable=True)
     section = Column(String, nullable=True)
     
+    
     attendances = relationship("Attendance", back_populates="student")
+    semester_results = relationship("SemesterResult", back_populates="student")
 
 class Attendance(Base):
     __tablename__ = "attendances"
@@ -49,3 +51,33 @@ class Notification(Base):
     date_posted = Column(DateTime, default=datetime.datetime.utcnow)
     recipient_role = Column(String) # 'all', 'student', 'faculty'
 
+class CalendarEvent(Base):
+    __tablename__ = "calendar_events"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime)
+    event_name = Column(String)
+    description = Column(String, nullable=True)
+    is_holiday = Column(Boolean, default=False)
+
+class TimetableEntry(Base):
+    __tablename__ = "timetable_entries"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    day_of_week = Column(String) # e.g., 'Monday'
+    class_id = Column(String)    # e.g., 'ECE-4-A'
+    period_number = Column(Integer)
+    subject_name = Column(String)
+    faculty_id = Column(String)  # Identifier name
+    room_number = Column(String, nullable=True)
+
+class SemesterResult(Base):
+    __tablename__ = "semester_results"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"))
+    semester = Column(String)
+    gpa = Column(Float)
+    total_credits = Column(Integer)
+    
+    student = relationship("User", back_populates="semester_results")

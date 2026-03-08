@@ -77,3 +77,46 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+# NEW SCHEMAS FOR PHASE 7
+
+# CALENDAR schemas
+class CalendarEventBase(BaseModel):
+    date: datetime
+    event_name: str
+    description: Optional[str] = None
+    is_holiday: bool = False
+
+class CalendarEventResponse(CalendarEventBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# TIMETABLE schemas
+class TimetableEntryBase(BaseModel):
+    day_of_week: str
+    class_id: str
+    period_number: int
+    subject_name: str
+    faculty_id: str
+    room_number: Optional[str] = None
+
+class TimetableEntryResponse(TimetableEntryBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+# SEMESTER RESULT schemas
+class SemesterResultBase(BaseModel):
+    semester: str
+    gpa: float
+    total_credits: int
+
+class SemesterResultCreate(SemesterResultBase):
+    student_username: str  # We'll use username from Excel to find the student ID
+
+class SemesterResultResponse(SemesterResultBase):
+    id: int
+    student_id: int
+    class Config:
+        from_attributes = True

@@ -4,6 +4,8 @@ import { useUser } from '../../../context/UserContext';
 
 export const AdminHomeView = () => {
   const { getStats, clearAllUsersExceptSelf } = useUser();
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
   const stats = getStats();
 
   const handleClearAll = () => {
@@ -14,6 +16,31 @@ export const AdminHomeView = () => {
       alert("System Reset Successfully! All data has been cleared.");
       window.location.reload();
     }
+  };
+
+  const handleUpload = async () => {
+    if (!file) return alert("Please select an Excel file.");
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await fetch('http://localhost:8000/admin/upload/calendar', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        setFile(null);
+      } else {
+        alert(data.detail || "Upload failed");
+      }
+    } catch(err) {
+      alert("Upload failed: " + err.message);
+    }
+    setLoading(false);
   };
 
   return (
@@ -43,12 +70,13 @@ export const AdminHomeView = () => {
 
       <div className="card" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Academic Calendar</h3>
+        <p className="text-muted" style={{ marginBottom: '1rem', fontSize: '0.9rem'}}>Upload Excel format. Columns: date, event_name, description, is_holiday</p>
         <div className="input-group">
-          <label>Upload New Calendar (PDF)</label>
-          <input type="file" accept=".pdf" />
+          <label>Upload New Calendar (.xlsx)</label>
+          <input type="file" accept=".xlsx, .xls" onChange={e => setFile(e.target.files[0])} />
         </div>
-        <button className="btn btn-primary" onClick={() => alert('Calendar Uploaded to all dashboards!')}>
-          Upload and Publish
+        <button className="btn btn-primary" onClick={handleUpload} disabled={loading}>
+          {loading ? 'Uploading...' : 'Upload and Publish'}
         </button>
       </div>
     </div>
@@ -58,35 +86,49 @@ export const AdminHomeView = () => {
 export const TimetableUploadView = ({ type }) => {
   const isStudent = type === 'student';
   const { classes } = useClasses();
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleUpload = async () => {
+    if (!file) return alert("Please select an Excel file.");
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await fetch('http://localhost:8000/admin/upload/timetable', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        setFile(null);
+      } else {
+        alert(data.detail || "Upload failed");
+      }
+    } catch(err) {
+      alert("Upload failed: " + err.message);
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="card" style={{ padding: '2rem', maxWidth: '600px' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>
         Upload {isStudent ? 'Student' : 'Faculty'} Time Table
       </h2>
-      <div className="input-group">
-        {isStudent ? (
-          <>
-            <label>Select Year</label>
-            <select><option>01</option><option>02</option><option>03</option><option>04</option></select>
-            <label style={{marginTop: '1rem'}}>Select Class</label>
-            <select>
-              {classes.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </>
-        ) : (
-          <>
-            <label>Faculty Code / Name</label>
-            <input type="text" placeholder="e.g. FAC001" />
-          </>
-        )}
-      </div>
+      <p className="text-muted" style={{ marginBottom: '1.5rem', fontSize: '0.9rem'}}>
+        Upload Excel format. Columns: day_of_week, class_id, period_number, subject_name, faculty_id, room_number
+      </p>
+      
       <div className="input-group" style={{ marginTop: '1rem' }}>
-        <label>Upload Time Table File (PDF/Excel)</label>
-        <input type="file" />
+        <label>Upload Time Table File (.xlsx)</label>
+        <input type="file" accept=".xlsx, .xls" onChange={e => setFile(e.target.files[0])} />
       </div>
-      <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => alert('Time Table Uploaded!')}>
-        Upload Time Table
+      <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleUpload} disabled={loading}>
+        {loading ? 'Uploading...' : 'Upload Time Table'}
       </button>
     </div>
   );
@@ -99,6 +141,9 @@ export const ManageUsersView = ({ type }) => {
     name: '', id: '', password: '', department: '', email: '', mobileNumber: '' 
   });
   const [isEditing, setIsEditing] = useState(false);
+  
+  const [bulkFile, setBulkFile] = useState(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const filteredUsers = users.filter(u => u.role === type);
 
@@ -138,11 +183,53 @@ export const ManageUsersView = ({ type }) => {
     setIsEditing(false);
   };
 
+  const handleBulkUpload = async () => {
+    if (!bulkFile) return alert("Please select an Excel file for bulk upload.");
+    setBulkLoading(true);
+    const formData = new FormData();
+    formData.append('file', bulkFile);
+    
+    try {
+      const res = await fetch('http://localhost:8000/admin/upload/users', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        setBulkFile(null);
+        // In a real app we'd refresh the user list from the backend here.
+      } else {
+        alert(data.detail || "Upload failed");
+      }
+    } catch(err) {
+      alert("Upload failed: " + err.message);
+    }
+    setBulkLoading(false);
+  };
+
   return (
     <div className="card" style={{ padding: '2rem', maxWidth: '600px' }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>
         {isEditing ? `Edit ${type} Details` : `Add New ${type === 'student' ? 'Student' : type === 'faculty' ? 'Faculty' : 'Admin'}`}
       </h2>
+      <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Bulk Upload via Excel</h3>
+        <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
+          Columns needed: username, name, password, role, department, year, section
+        </p>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+          <div className="input-group" style={{ margin: 0, flex: 1 }}>
+            <input type="file" accept=".xlsx, .xls" onChange={e => setBulkFile(e.target.files[0])} />
+          </div>
+          <button className="btn btn-primary" onClick={handleBulkUpload} disabled={bulkLoading}>
+            {bulkLoading ? 'Uploading...' : 'Import Users'}
+          </button>
+        </div>
+      </div>
+
+      <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>Manual Add / Edit</h3>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
         <div className="input-group">
           <label>Full Name</label>
@@ -319,44 +406,60 @@ export const ApprovalsView = () => {
 
 export const SemResultsView = () => {
   const { classes } = useClasses();
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleUpload = async () => {
+    if (!file) return alert("Please select an Excel file.");
+    setLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await fetch('http://localhost:8000/admin/upload/results', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        setFile(null);
+      } else {
+        alert(data.detail || "Upload failed");
+      }
+    } catch(err) {
+      alert("Upload failed: " + err.message);
+    }
+    setLoading(false);
+  };
 
   return (
     <div>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Manage Semester Results</h2>
       <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <div className="input-group">
-            <label>Select Year</label>
-            <select><option>01</option><option>02</option><option>03</option><option>04</option></select>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Upload Results via Excel</h3>
+        <p className="text-muted" style={{ fontSize: '0.85rem', marginBottom: '1rem' }}>
+          Columns needed: student_username, semester, gpa, total_credits
+        </p>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+          <div className="input-group" style={{ margin: 0, flex: 1 }}>
+            <input type="file" accept=".xlsx, .xls" onChange={e => setFile(e.target.files[0])} />
           </div>
-          <div className="input-group">
-            <label>Select Class</label>
-            <select>
-              {classes.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
+          <button className="btn btn-primary" onClick={handleUpload} disabled={loading}>
+            {loading ? 'Uploading...' : 'Import Results'}
+          </button>
         </div>
       </div>
       
       <div className="table-container">
         <table>
           <thead>
-            <tr><th>Reg No</th><th>Student Name</th><th>Overall Grade</th><th>Result</th><th>Action</th></tr>
+            <tr><th>Reg No</th><th>Student Name</th><th>Overall GPA</th><th>Semester</th><th>Action</th></tr>
           </thead>
           <tbody>
             <tr>
-              <td className="font-bold">STU001</td>
-              <td>Alice Smith</td>
-              <td>O</td>
-              <td className="text-success font-bold">Pass</td>
-              <td><button className="btn btn-primary" style={{ padding: '0.5rem' }}>Modify Results</button></td>
-            </tr>
-            <tr>
-              <td className="font-bold">STU002</td>
-              <td>Bob Johnson</td>
-              <td>C</td>
-              <td className="text-danger font-bold">Fail</td>
-              <td><button className="btn btn-primary" style={{ padding: '0.5rem' }}>Modify Results</button></td>
+              <td colSpan={5} className="text-center text-muted">Results fetched dynamically from DB (placeholder)</td>
             </tr>
           </tbody>
         </table>

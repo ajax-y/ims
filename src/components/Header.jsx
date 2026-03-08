@@ -43,24 +43,22 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
           <Menu size={24} color="var(--text-main)" />
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img 
-            src={`${import.meta.env.BASE_URL}logo.png`}
-            alt="RIT Logo" 
-            style={{ height: '32px', objectFit: 'contain' }}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.style.display = 'none';
-            }}
-          />
-          <span style={{ fontSize: '1.25rem', fontWeight: '600', color: 'var(--text-main)' }}>
+          <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '-0.5px' }}>
             IMS Portal
           </span>
         </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        <button style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}>
-          <Bell size={20} color="var(--text-muted)" />
+        <button 
+          onClick={() => {
+            // Trigger a manual poll or pop a message by dispatching an event that NotificationToast can listen to if needed.
+            // For now, we'll just show an alert since it's already polling in the background.
+            // alert('Notifications are up to date.');
+          }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}
+        >
+          <Bell size={20} color="var(--text-muted)" className="hover:text-primary transition-colors" />
           <span style={{
             position: 'absolute',
             top: 0,
