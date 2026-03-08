@@ -149,26 +149,16 @@ export const ManageUsersView = ({ type }) => {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleAddUser = () => {
-    if (!formData.name || !formData.id || !formData.password || !formData.email || !formData.mobileNumber) {
-      return alert("Please fill all required fields, including Email and Mobile Number.");
-    }
-    
-    // 10-digit mobile validation
-    const phoneRegex = /^\d{10}$/;
-    if (!phoneRegex.test(formData.mobileNumber)) {
-      return alert("Mobile Number must be exactly 10 digits.");
-    }
-
+  const handleAddUser = async () => {
     if (type === 'student' && !formData.department) return alert("Department/Class is required for students");
 
     if (isEditing) {
-      updateUserProfile(formData.id, { ...formData, role: type });
+      await updateUserProfile(formData.id, { ...formData, role: type });
       alert(`${type} Details Updated Successfully!`);
       setFormData({ name: '', id: '', password: '', department: '', email: '', mobileNumber: '' });
       setIsEditing(false);
     } else {
-      const success = addUser({ ...formData, role: type });
+      const success = await addUser({ ...formData, role: type });
       if (success) {
         alert(`${type} Added Successfully!`);
         setFormData({ name: '', id: '', password: '', department: '', email: '', mobileNumber: '' });
@@ -375,38 +365,84 @@ export const ApprovalsView = () => {
   });
 
   const handleAction = (id, action) => {
-    const updated = requests.filter(req => req.id !== id);
+    const updated = requests.map(req => req.id === id ? { ...req, status: action } : req);
     setRequests(updated);
     localStorage.setItem('ims_leave_requests', JSON.stringify(updated));
     alert(`${action} successfully.`);
   };
 
+  const pendingRequests = requests.filter(r => r.status === 'Pending' || !r.status);
+  const historicRequests = requests.filter(r => r.status === 'Approved' || r.status === 'Declined');
+
+  const [activeTab, setActiveTab] = useState('pending');
+
   return (
     <div>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Leave / OD Approvals</h2>
+      
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+        <button 
+          className="btn" 
+          style={{ padding: '0.5rem 1.5rem', fontWeight: '600', borderBottom: activeTab === 'pending' ? '2px solid var(--primary)' : 'none', color: activeTab === 'pending' ? 'var(--primary)' : 'var(--text-muted)' }}
+          onClick={() => setActiveTab('pending')}
+        >
+          Pending ({pendingRequests.length})
+        </button>
+        <button 
+          className="btn" 
+          style={{ padding: '0.5rem 1.5rem', fontWeight: '600', borderBottom: activeTab === 'history' ? '2px solid var(--primary)' : 'none', color: activeTab === 'history' ? 'var(--primary)' : 'var(--text-muted)' }}
+          onClick={() => setActiveTab('history')}
+        >
+          Actioned History
+        </button>
+      </div>
+
       <div className="table-container">
         <table>
           <thead>
-            <tr><th>Name / ID</th><th>Type</th><th>Dates</th><th>Reason</th><th>Proofs</th><th>Actions</th></tr>
+            <tr><th>Name / ID</th><th>Type</th><th>Dates</th><th>Reason</th><th>Proofs</th><th>{activeTab === 'pending' ? 'Actions' : 'Status'}</th></tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
-              <tr><td colSpan="6" className="text-center text-muted">No pending requests</td></tr>
-            ) : requests.map(req => (
-              <tr key={req.id}>
-                <td className="font-bold">{req.name}</td>
-                <td><span style={{ padding: '0.25rem 0.5rem', backgroundColor: req.type==='OD' || req.type==='od' ? '#dbeafe' : '#fef3c7', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600', textTransform: 'capitalize' }}>{req.type}</span></td>
-                <td>{req.dates}</td>
-                <td>{req.reason}</td>
-                <td><a href="#" className="text-primary" style={{ textDecoration: 'underline' }}>View Proof</a></td>
-                <td>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn" style={{ padding: '0.5rem', backgroundColor: 'var(--success)', color: 'white' }} onClick={() => handleAction(req.id, 'Approved')}>Approve</button>
-                    <button className="btn" style={{ padding: '0.5rem', backgroundColor: 'var(--danger)', color: 'white' }} onClick={() => handleAction(req.id, 'Declined')}>Decline</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {activeTab === 'pending' ? (
+              pendingRequests.length === 0 ? (
+                <tr><td colSpan="6" className="text-center text-muted">No pending requests</td></tr>
+              ) : pendingRequests.map(req => (
+                <tr key={req.id}>
+                  <td className="font-bold">{req.name}</td>
+                  <td><span style={{ padding: '0.25rem 0.5rem', backgroundColor: req.type==='OD' || req.type==='od' ? '#dbeafe' : '#fef3c7', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase' }}>{req.type}</span></td>
+                  <td>{req.dates}</td>
+                  <td>{req.reason}</td>
+                  <td><a href="#" className="text-primary" style={{ textDecoration: 'underline' }}>View Proof</a></td>
+                  <td>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn" style={{ padding: '0.5rem', backgroundColor: 'var(--success)', color: 'white' }} onClick={() => handleAction(req.id, 'Approved')}>Approve</button>
+                      <button className="btn" style={{ padding: '0.5rem', backgroundColor: 'var(--danger)', color: 'white' }} onClick={() => handleAction(req.id, 'Declined')}>Decline</button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              historicRequests.length === 0 ? (
+                <tr><td colSpan="6" className="text-center text-muted">No actioned requests</td></tr>
+              ) : historicRequests.reverse().map(req => (
+                <tr key={req.id}>
+                  <td className="font-bold">{req.name}</td>
+                  <td><span style={{ padding: '0.25rem 0.5rem', backgroundColor: req.type==='OD' || req.type==='od' ? '#dbeafe' : '#fef3c7', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase' }}>{req.type}</span></td>
+                  <td>{req.dates}</td>
+                  <td>{req.reason}</td>
+                  <td><a href="#" className="text-primary" style={{ textDecoration: 'underline' }}>View Proof</a></td>
+                  <td>
+                    <span style={{ 
+                      padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', fontWeight: '600',
+                      backgroundColor: req.status === 'Approved' ? '#dcfce7' : req.status === 'Declined' ? '#fee2e2' : '#f1f5f9',
+                      color: req.status === 'Approved' ? '#166534' : req.status === 'Declined' ? '#991b1b' : '#475569'
+                    }}>
+                      {req.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

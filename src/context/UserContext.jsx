@@ -7,12 +7,16 @@ export function useUser() {
 }
 
 // Default initial state matching user request
-const DEFAULT_USERS = [
-  { id: 'aden', password: '12345', name: 'Aden Admin', role: 'admin' },
-  { id: 'ajay', password: '12345', name: 'Ajay', role: 'faculty' },
-  { id: 'aldrin', password: '12345', name: 'Aldrin', role: 'student', department: 'B.E.ECE/01/A' },
-  { id: 'kaviya', password: '12345', name: 'Kaviya', role: 'student', department: 'B.E.CSE/02/B' }
-];
+// Industry Standard Asynchronous SHA-256 Hash via Web Crypto API
+const hashPassword = async (password) => {
+  if (!password) return '';
+  const msgUint8 = new TextEncoder().encode(password + "_ims_secure_salt_v2");
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  // Convert buffer to hex string
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+};
 
 export function UserProvider({ children }) {
   const [users, setUsers] = useState(() => {
@@ -25,11 +29,26 @@ export function UserProvider({ children }) {
         console.error("Failed parsing users", e);
       }
     }
-    return DEFAULT_USERS;
+    return []; // Start empty so we can safely compute default hashes asynchronously
   });
 
   useEffect(() => {
-    localStorage.setItem('ims_users', JSON.stringify(users));
+    const initDefaultsAndSave = async () => {
+      // If empty AND nothing saved, construct defaults with async SHA-256
+      if (users.length === 0 && !localStorage.getItem('ims_users')) {
+        const defaultHashedPass = await hashPassword('12345');
+        const defaults = [
+          { id: 'aden', password: defaultHashedPass, name: 'Aden Admin', role: 'admin' },
+          { id: 'ajay', password: defaultHashedPass, name: 'Ajay', role: 'faculty' },
+          { id: 'aldrin', password: defaultHashedPass, name: 'Aldrin', role: 'student', department: 'B.E.ECE/01/A' },
+          { id: 'kaviya', password: defaultHashedPass, name: 'Kaviya', role: 'student', department: 'B.E.CSE/02/B' }
+        ];
+        setUsers(defaults);
+      } else if (users.length > 0) {
+        localStorage.setItem('ims_users', JSON.stringify(users));
+      }
+    };
+    initDefaultsAndSave();
   }, [users]);
 
   // Authenticate user
@@ -37,7 +56,14 @@ export function UserProvider({ children }) {
     // Backend is down, so bypass API entirely to make login instant.
     console.log("Backend offline override: Instant local login");
     
-    const localUser = users.find(u => (u.id === id || u.username === id) && u.password === password);
+    const hashedInput = await hashPassword(password);
+    const localUser = users.find(u => {
+      const matchId = u.id === id || u.username === id;
+      // Allow legacy plain-text match for backward compatibility, prefer hashed
+      const matchPass = u.password === hashedInput || u.password === password;
+      return matchId && matchPass;
+    });
+
     if (localUser) {
       // Create a mock token for local session
       localStorage.setItem('access_token', 'mock_local_token_' + Date.now());
@@ -49,12 +75,15 @@ export function UserProvider({ children }) {
     return null;
   };
 
-  const addUser = (newUser) => {
+  const addUser = async (newUser) => {
     // Check if ID already exists
     if (users.some(u => u.id.toLowerCase() === newUser.id.toLowerCase())) {
       return false; // User exists
     }
-    setUsers([...users, newUser]);
+    
+    const hashedNewPassword = await hashPassword(newUser.password);
+    const userToSave = { ...newUser, password: hashedNewPassword };
+    setUsers(prev => [...prev, userToSave]);
     return true;
   };
 
@@ -66,8 +95,14 @@ export function UserProvider({ children }) {
     setUsers(users.filter(u => u.id === currentAdminId));
   };
 
-  const resetToDefaults = () => {
-    setUsers(DEFAULT_USERS);
+  const resetToDefaults = async () => {
+    const defaultHashedPass = await hashPassword('12345');
+    setUsers([
+      { id: 'aden', password: defaultHashedPass, name: 'Aden Admin', role: 'admin' },
+      { id: 'ajay', password: defaultHashedPass, name: 'Ajay', role: 'faculty' },
+      { id: 'aldrin', password: defaultHashedPass, name: 'Aldrin', role: 'student', department: 'B.E.ECE/01/A' },
+      { id: 'kaviya', password: defaultHashedPass, name: 'Kaviya', role: 'student', department: 'B.E.CSE/02/B' }
+    ]);
   };
 
   const getStudentsByClass = (className) => {
@@ -81,11 +116,18 @@ export function UserProvider({ children }) {
     return { studentCount, facultyCount, adminCount };
   };
 
-  const updateUserProfile = (userId, newProfileData) => {
+  const updateUserProfile = async (userId, newProfileData) => {
+    let finalData = { ...newProfileData };
+    if (finalData.password) {
+      // Fetch the user to check if password changed
+      const usr = users.find(u => u.id === userId);
+      if (usr && finalData.password !== usr.password) {
+        finalData.password = await hashPassword(finalData.password);
+      }
+    }
+
     setUsers(prevUsers => 
-      prevUsers.map(u => 
-        u.id === userId ? { ...u, ...newProfileData } : u
-      )
+      prevUsers.map(u => u.id === userId ? { ...u, ...finalData } : u)
     );
   };
 

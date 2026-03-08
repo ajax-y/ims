@@ -6,17 +6,30 @@ function LeaveView({ user }) {
   const [toDate, setToDate] = useState('');
   const [reason, setReason] = useState('');
   
+  // Custom hook to load students own history
+  const [history, setHistory] = useState([]);
+
+  React.useEffect(() => {
+    const allReqs = JSON.parse(localStorage.getItem('ims_leave_requests') || '[]');
+    setHistory(allReqs.filter(r => r.userId === user?.id));
+  }, [user]);
+  
   const handleSubmit = (e) => {
     e.preventDefault();
     const newReq = {
       id: Date.now(),
       name: user ? `${user.name} (${user.id})` : 'Unknown User',
+      userId: user?.id || 'unknown',
       type: type,
       dates: `${fromDate} to ${toDate}`,
-      reason: reason
+      reason: reason,
+      status: 'Pending',
+      submittedAt: new Date().toISOString()
     };
     const saved = JSON.parse(localStorage.getItem('ims_leave_requests') || '[]');
-    localStorage.setItem('ims_leave_requests', JSON.stringify([...saved, newReq]));
+    const updatedReqs = [...saved, newReq];
+    localStorage.setItem('ims_leave_requests', JSON.stringify(updatedReqs));
+    setHistory(updatedReqs.filter(r => r.userId === user?.id));
 
     alert('Request submitted successfully!');
     setFromDate('');
@@ -63,6 +76,47 @@ function LeaveView({ user }) {
           Submit Request
         </button>
       </form>
+
+      <div style={{ marginTop: '3rem' }}>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>My Applications History</h3>
+        
+        {history.length === 0 ? (
+          <div className="card" style={{ padding: '2rem', textAlign: 'center', backgroundColor: '#f8fafc' }}>
+            <p className="text-muted">You have no past leave or OD applications.</p>
+          </div>
+        ) : (
+          <div className="table-container card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Dates</th>
+                  <th>Reason</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.reverse().map(req => (
+                  <tr key={req.id}>
+                    <td><span style={{ padding: '0.25rem 0.5rem', backgroundColor: req.type==='OD' || req.type==='od' ? '#dbeafe' : '#fef3c7', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase' }}>{req.type}</span></td>
+                    <td>{req.dates}</td>
+                    <td className="text-muted" style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{req.reason}</td>
+                    <td>
+                      <span style={{ 
+                        padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', fontWeight: '600',
+                        backgroundColor: req.status === 'Approved' ? '#dcfce7' : req.status === 'Declined' ? '#fee2e2' : '#f1f5f9',
+                        color: req.status === 'Approved' ? '#166534' : req.status === 'Declined' ? '#991b1b' : '#475569'
+                      }}>
+                        {req.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
