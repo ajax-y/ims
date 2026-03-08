@@ -19,21 +19,22 @@ const FacultyMaterialHubView = ({ user }) => {
   }, []);
 
   const fetchMaterials = async () => {
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('materials')
-          .select('*')
-          .eq('uploaded_by', user.id)
-          .order('created_at', { ascending: false });
-        if (!error && data) setMaterials(data);
-      } catch (err) {
-        console.error('Error fetching materials:', err);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://localhost:8000/materials', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setMaterials(data);
+      } else {
+        setMaterials([]);
       }
-    } else {
-      // Fallback
-      const saved = JSON.parse(localStorage.getItem('ims_mock_materials') || '[]');
-      setMaterials(saved.filter(m => m.uploaded_by === user.id));
+    } catch(err) {
+      console.error(err);
+      setMaterials([]);
     }
   };
 
@@ -74,41 +75,48 @@ const FacultyMaterialHubView = ({ user }) => {
         
       fileUrl = publicUrlData.publicUrl;
 
-      // 2. Insert into database
-      const newMaterial = {
-        file_url: fileUrl,
-        file_name: file.name,
-        file_type: fileType,
-        class_id: selectedClass,
-        subject_name: subjectName,
-        uploaded_by: user.id
-      };
+      // 2. Insert into database (FastAPI)
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch('http://localhost:8000/materials/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: file.name,
+            description: subjectName,
+            url: fileUrl,
+            category: selectedClass
+          })
+        });
 
-      const { error: dbError } = await supabase
-        .from('materials')
-        .insert([newMaterial]);
-
-      if (dbError) {
-        alert("Database insert failed: " + dbError.message);
-      } else {
-        alert("Material uploaded successfully!");
+        if (res.ok) alert("Material uploaded successfully!");
+        else alert("Database metadata insert failed!");
+      } catch (err) {
+        alert("Server error: " + err.message);
       }
     } else {
       // Fallback local mock
       fileUrl = URL.createObjectURL(file);
-      const newMaterial = {
-        id: Date.now().toString(),
-        file_url: fileUrl,
-        file_name: file.name,
-        file_type: fileType,
-        class_id: selectedClass,
-        subject_name: subjectName,
-        uploaded_by: user.id,
-        created_at: new Date().toISOString()
-      };
-      const allSaved = JSON.parse(localStorage.getItem('ims_mock_materials') || '[]');
-      localStorage.setItem('ims_mock_materials', JSON.stringify([...allSaved, newMaterial]));
-      alert("Material mocked successfully (Supabase backend missing)!");
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch('http://localhost:8000/materials/upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            title: file.name,
+            description: subjectName,
+            url: fileUrl,
+            category: selectedClass
+          })
+        });
+        if (res.ok) alert("Material uploaded successfully (Database Only)!");
+      } catch(err) {}
     }
 
     setFile(null);
@@ -212,11 +220,11 @@ const FacultyMaterialHubView = ({ user }) => {
               </div>
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <h4 style={{ fontSize: '1rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {material.file_name}
+                  {material.title}
                 </h4>
                 <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                  <span style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{material.class_id}</span>
-                  <span style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{material.subject_name}</span>
+                  <span style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{material.category}</span>
+                  <span style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{material.description}</span>
                 </div>
               </div>
               <button 

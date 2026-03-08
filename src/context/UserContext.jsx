@@ -33,8 +33,39 @@ export function UserProvider({ children }) {
   }, [users]);
 
   // Authenticate user
-  const loginUser = (id, password) => {
-    return users.find(u => u.id.toLowerCase() === id.toLowerCase() && u.password === password) || null;
+  const loginUser = async (id, password) => {
+    try {
+      const formData = new URLSearchParams();
+      formData.append('username', id);
+      formData.append('password', password);
+
+      const response = await fetch('http://localhost:8000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData
+      });
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      localStorage.setItem('access_token', data.access_token);
+
+      // fetch user profile
+      const userRes = await fetch('http://localhost:8000/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${data.access_token}`
+        }
+      });
+      if (!userRes.ok) return null;
+      const userData = await userRes.json();
+      
+      return { ...userData, id: userData.username };
+    } catch(err) {
+      console.error(err);
+      return null;
+    }
   };
 
   const addUser = (newUser) => {

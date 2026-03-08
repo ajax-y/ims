@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useUser } from '../../../context/UserContext';
 import { useData } from '../../../context/DataContext';
-import { Info } from 'lucide-react';
+import { Info, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 function StudentAttendanceView({ user }) {
   const { getStudentsByClass } = useUser();
@@ -58,6 +60,35 @@ function StudentAttendanceView({ user }) {
     alert('Attendance Saved Successfully and incremented for this class session!');
   };
 
+  const handleDownloadPDF = () => {
+    if (!selectedClass || students.length === 0) return;
+    const doc = new jsPDF();
+    doc.text(`Monthly Attendance Report - ${selectedClass}`, 14, 15);
+    
+    const tableData = students.map((student, idx) => {
+      const stats = getStudentAttendanceStats(student.id);
+      const attPerc = stats.completedPeriods > 0 
+        ? Math.round((stats.attendedPeriods / stats.completedPeriods) * 100) 
+        : 0;
+      return [
+        idx + 1,
+        student.id.toUpperCase(),
+        student.name,
+        stats.attendedPeriods,
+        stats.completedPeriods,
+        `${attPerc}%`
+      ];
+    });
+
+    doc.autoTable({
+      head: [['S.No', 'Reg No', 'Student Name', 'Attended', 'Total', 'Percentage']],
+      body: tableData,
+      startY: 20,
+    });
+    
+    doc.save(`Attendance_${selectedClass}.pdf`);
+  };
+
   if (assignments.length === 0) {
     return (
       <div>
@@ -80,14 +111,22 @@ function StudentAttendanceView({ user }) {
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Mark Student Attendance</h2>
 
       <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-        <div className="input-group" style={{ maxWidth: '300px' }}>
-          <label>Select Assigned Class</label>
-          <select value={selectedClass} onChange={handleClassChange}>
-            <option value="">-- Choose Class --</option>
-            {assignments.map(a => (
-              <option key={a.id} value={a.assignedClassNode}>{a.assignedClassNode} ({a.subject})</option>
-            ))}
-          </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+          <div className="input-group" style={{ maxWidth: '300px', margin: 0 }}>
+            <label>Select Assigned Class</label>
+            <select value={selectedClass} onChange={handleClassChange}>
+              <option value="">-- Choose Class --</option>
+              {assignments.map(a => (
+                <option key={a.id} value={a.assignedClassNode}>{a.assignedClassNode} ({a.subject})</option>
+              ))}
+            </select>
+          </div>
+          {selectedClass && students.length > 0 && (
+            <button onClick={handleDownloadPDF} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#3b82f6', color: 'white', padding: '0.5rem 1rem' }}>
+              <Download size={18} />
+              Download Report
+            </button>
+          )}
         </div>
       </div>
 

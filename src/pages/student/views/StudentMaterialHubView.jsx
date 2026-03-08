@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { Download, File as FileIcon, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
+import { Download, File as FileIcon, Image as ImageIcon, Video as VideoIcon, Search } from 'lucide-react';
 
 const StudentMaterialHubView = ({ user }) => {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load materials from Supabase OR fallback to localStorage
   useEffect(() => {
@@ -13,27 +14,31 @@ const StudentMaterialHubView = ({ user }) => {
 
   const fetchMaterials = async () => {
     setLoading(true);
-    const studentClassId = user.classInfo || ''; // Assuming the user has a class assigned
+    const studentClassId = user.classInfo || user.department || '';
 
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('materials')
-          .select('*')
-          .eq('class_id', studentClassId)
-          .order('created_at', { ascending: false });
-        if (!error && data) setMaterials(data);
-      } catch (err) {
-        console.error('Error fetching materials:', err);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch('http://localhost:8000/materials', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // The backend model has: title, description, url, category, uploaded_by
+        // We filter by category mapping to student's class
+        const filtered = data.filter(m => m.category === studentClassId);
+        setMaterials(filtered);
+      } else {
+        setMaterials([]);
       }
-    } else {
-      // Fallback
-      const saved = JSON.parse(localStorage.getItem('ims_mock_materials') || '[]');
-      setMaterials(saved.filter(m => m.class_id === studentClassId));
+    } catch (err) {
+      console.error('Error fetching materials:', err);
+      setMaterials([]);
     }
     setLoading(false);
   };
-
   const getIcon = (type) => {
     switch (type) {
       case 'image': return <ImageIcon size={24} className="text-primary" />;
@@ -45,10 +50,20 @@ const StudentMaterialHubView = ({ user }) => {
 
   return (
     <div className="fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1rem', marginBottom: '2rem' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Material Hub</h2>
           <p className="text-muted" style={{ marginTop: '0.25rem' }}>View and download materials assigned to your class ({user.classInfo})</p>
+        </div>
+        <div className="input-group" style={{ margin: 0, width: '100%', maxWidth: '400px', display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-color)', padding: '0.5rem 1rem', borderRadius: 'var(--radius-md)' }}>
+          <Search size={18} className="text-muted" style={{ marginRight: '0.75rem' }} />
+          <input 
+            type="text" 
+            placeholder="Search materials by title or subject..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ border: 'none', background: 'transparent', outline: 'none', width: '100%', color: 'var(--text-main)' }}
+          />
         </div>
       </div>
 
@@ -64,22 +79,25 @@ const StudentMaterialHubView = ({ user }) => {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          {materials.map(material => (
+          {materials.filter(m => 
+            (m.title && m.title.toLowerCase().includes(searchQuery.toLowerCase())) || 
+            (m.description && m.description.toLowerCase().includes(searchQuery.toLowerCase()))
+          ).map(material => (
             <div key={material.id} className="card" style={{ padding: '1.5rem', display: 'flex', gap: '1.25rem', alignItems: 'center', transition: 'var(--transition)' }}>
               <div style={{ padding: '1.25rem', backgroundColor: 'var(--bg-color)', borderRadius: 'var(--radius-md)' }}>
-                {getIcon(material.file_type)}
+                {getIcon('pdf')}
               </div>
               <div style={{ flex: 1, overflow: 'hidden' }}>
                 <h4 style={{ fontSize: '1rem', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {material.file_name}
+                  {material.title}
                 </h4>
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <span>Subject: <strong style={{ color: 'var(--text-color)' }}>{material.subject_name}</strong></span>
+                  <span>Subject: <strong style={{ color: 'var(--text-color)' }}>{material.description}</strong></span>
                   <span>Uploaded by: Faculty ID {material.uploaded_by}</span>
                 </div>
               </div>
               <a 
-                href={material.file_url}
+                href={material.url}
                 target="_blank"
                 rel="noreferrer"
                 style={{ 

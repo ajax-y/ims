@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import NotificationToast from './NotificationToast';
 
 function Layout({ user, role, activeTab, onTabChange, onLogout, children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -25,6 +26,7 @@ function Layout({ user, role, activeTab, onTabChange, onLogout, children }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-color)' }}>
+      <NotificationToast user={user} />
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200 }}>
         <Header user={user} onToggleSidebar={toggleSidebar} onLogout={onLogout} onTabChange={onTabChange} />
       </div>

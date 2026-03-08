@@ -8,7 +8,7 @@ function Login({ onLogin }) {
   const [error, setError] = useState('');
   const { loginUser } = useUser();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -17,7 +17,7 @@ function Login({ onLogin }) {
       return;
     }
 
-    const user = loginUser(userId, password);
+    const user = await loginUser(userId, password);
 
     if (user) {
       onLogin(user);

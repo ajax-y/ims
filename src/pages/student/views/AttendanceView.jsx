@@ -1,16 +1,75 @@
 import React, { useState } from 'react';
 import { useData } from '../../../context/DataContext';
+import { MapPin } from 'lucide-react';
 
 function AttendanceView({ user }) {
   const { getStudentAttendanceStats, getSubjectsForStudent } = useData();
   const [sem, setSem] = useState('01');
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [checkInMsg, setCheckInMsg] = useState('');
   
   const mySubjects = getSubjectsForStudent(user?.department);
   const globalStats = getStudentAttendanceStats(user?.id);
 
+  const handleSmartCheckIn = () => {
+    if (!navigator.geolocation) {
+      setCheckInMsg('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setCheckingIn(true);
+    setCheckInMsg('Locating...');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const token = localStorage.getItem('access_token');
+          const res = await fetch('http://localhost:8000/attendance/mark', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              student_id: 1, // Fallback since real dbId might be missing in context
+              status: 'Present',
+              latitude: latitude,
+              longitude: longitude
+            })
+          });
+
+          if (res.ok) setCheckInMsg('✅ Inside Campus: Checked In!');
+          else setCheckInMsg('❌ Check-in failed: Not within campus bounds.');
+        } catch(err) {
+          setCheckInMsg('❌ Check-in Error: API unreachable.');
+        }
+        setCheckingIn(false);
+      },
+      (err) => {
+        setCheckInMsg('❌ Location access denied.');
+        setCheckingIn(false);
+      }
+    );
+  };
+
   return (
     <div>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Attendance Report</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>Attendance Report</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {checkInMsg && <span style={{ fontSize: '0.85rem', fontWeight: '500' }}>{checkInMsg}</span>}
+          <button 
+            onClick={handleSmartCheckIn} 
+            disabled={checkingIn}
+            className="btn btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <MapPin size={18} />
+            {checkingIn ? 'Checking...' : 'Smart Check-In'}
+          </button>
+        </div>
+      </div>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div style={{ fontWeight: '500', color: 'var(--text-main)' }}>

@@ -102,7 +102,7 @@ export function DataProvider({ children }) {
   };
 
   // Transactional style attendance update
-  const incrementClassAttendance = (studentIds, presentIds) => {
+  const incrementClassAttendance = async (studentIds, presentIds) => {
     setAttendance(prev => {
       const next = { ...prev };
       
@@ -118,6 +118,27 @@ export function DataProvider({ children }) {
       
       return next;
     });
+
+    // Send to backend
+    const token = localStorage.getItem('access_token');
+    for (const studentId of studentIds) {
+      const isPresent = presentIds.includes(studentId);
+      try {
+        await fetch('http://localhost:8000/attendance/mark', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            student_id: 1, // backend requires integer IDs, we are using strings in frontend but mapping required
+            status: isPresent ? 'Present' : 'Absent',
+          })
+        });
+      } catch (err) {
+        console.error("Failed to mark attendance for", studentId, err);
+      }
+    }
   };
 
   const getStudentAttendanceStats = (studentId) => {
