@@ -9,7 +9,13 @@ import StudentMaterialHubView from './views/StudentMaterialHubView';
 import ProfileView from '../../components/ProfileView';
 
 function StudentDashboard({ user, onLogout }) {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('ims_student_active_tab') || 'home';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ims_student_active_tab', activeTab);
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {

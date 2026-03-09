@@ -23,6 +23,7 @@ const StudentMaterialHubView = ({ user }) => {
 
     if (error) {
       console.error('fetchMaterials (student):', error.message);
+      alert('API Error (Materials): ' + error.message + '\n\nPlease ensure the "materials" table exists in Supabase.');
     } else {
       setMaterials(data || []);
     }

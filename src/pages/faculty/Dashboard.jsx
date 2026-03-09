@@ -12,7 +12,13 @@ import AttendanceView from '../student/views/AttendanceView';
 import LeaveView from '../student/views/LeaveView';
 
 function FacultyDashboard({ user, onLogout }) {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('ims_faculty_active_tab') || 'home';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ims_faculty_active_tab', activeTab);
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {

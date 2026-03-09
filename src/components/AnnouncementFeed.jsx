@@ -36,8 +36,8 @@ const AnnouncementFeed = () => {
         <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: 0 }}>Latest Announcements</h3>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {announcements.map((a) => (
-          <div key={a.id} style={{ paddingBottom: '0.75rem', borderBottom: '1px solid var(--border)', lastChild: { borderBottom: 'none' } }}>
+        {announcements.map((a, index) => (
+          <div key={a.id} style={{ paddingBottom: '0.75rem', borderBottom: index === announcements.length - 1 ? 'none' : '1px solid var(--border)' }}>
             <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>{a.title}</h4>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>{a.message}</p>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(a.created_at).toLocaleDateString()}</span>

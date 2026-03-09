@@ -13,7 +13,13 @@ import FacultyAssignmentView from './views/FacultyAssignmentView';
 import ProfileView from '../../components/ProfileView';
 
 function AdminDashboard({ user, onLogout }) {
-  const [activeTab, setActiveTab] = useState('home');
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('ims_admin_active_tab') || 'home';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('ims_admin_active_tab', activeTab);
+  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {
