@@ -53,10 +53,11 @@ export function UserProvider({ children }) {
   // Authenticate user against Supabase
   const loginUser = async (id, password) => {
     if (!supabase) {
-      alert('Supabase Connection Error: Please check VITE_SUPABASE_URL and KEY in .env.local');
+      alert('Supabase Connection Error: Please check VITE_SUPABASE_URL and KEY in .env.local\n\nThe app cannot connect to the database.');
       return null;
     }
     try {
+      console.log('Login attempt for ID:', id);
       const hashedInput = await hashPassword(password);
 
       const { data, error } = await supabase
@@ -65,23 +66,32 @@ export function UserProvider({ children }) {
         .eq('id', id)
         .single();
 
-      if (error || !data) {
-        console.error('Login: user not found', error?.message);
+      if (error) {
+        console.error('Login Error:', error);
+        alert('Login Error from Database: ' + error.message + '\nCode: ' + error.code);
+        return null;
+      }
+
+      if (!data) {
+        console.error('Login: user not found');
+        alert('User ID not found in database. Please check your spelling.');
         return null;
       }
 
       // Support both hashed and legacy plain-text passwords
       if (data.password_hash !== hashedInput && data.password_hash !== password) {
         console.error('Login: invalid password');
+        alert('Incorrect password. Please try again.');
         return null;
       }
 
       const user = { ...data, id: data.id };
       localStorage.setItem('ims_current_user', JSON.stringify(user));
+      console.log('Login successful for:', user.name);
       return user;
     } catch (err) {
       console.error('loginUser exception:', err);
-      alert('Login Error: ' + err.message);
+      alert('Application Critical Error during login: ' + err.message + '\n\nPlease check your internet connection and try again.');
       return null;
     }
   };
