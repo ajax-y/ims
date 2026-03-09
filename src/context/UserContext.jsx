@@ -10,10 +10,19 @@ export function useUser() {
 // SHA-256 hash (same salt as before for backward compat)
 const hashPassword = async (password) => {
   if (!password) return '';
-  const msgUint8 = new TextEncoder().encode(password + "_ims_secure_salt_v2");
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  try {
+    const msgUint8 = new TextEncoder().encode(password + "_ims_secure_salt_v2");
+    if (!window.crypto || !window.crypto.subtle) {
+      console.warn('Crypto subtle not available (non-secure context?). Falling back to plain text for local dev.');
+      return password; 
+    }
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (err) {
+    console.error('hashPassword error:', err);
+    return password;
+  }
 };
 
 export function UserProvider({ children }) {
@@ -26,6 +35,11 @@ export function UserProvider({ children }) {
   }, []);
 
   const fetchUsers = async () => {
+    if (!supabase) {
+      console.error('Supabase client not initialized. Check your environment variables.');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.from('users').select('*');
     if (error) {
@@ -38,28 +52,38 @@ export function UserProvider({ children }) {
 
   // Authenticate user against Supabase
   const loginUser = async (id, password) => {
-    const hashedInput = await hashPassword(password);
-
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error || !data) {
-      console.error('Login: user not found', error?.message);
+    if (!supabase) {
+      alert('Supabase Connection Error: Please check VITE_SUPABASE_URL and KEY in .env.local');
       return null;
     }
+    try {
+      const hashedInput = await hashPassword(password);
 
-    // Support both hashed and legacy plain-text passwords
-    if (data.password_hash !== hashedInput && data.password_hash !== password) {
-      console.error('Login: invalid password');
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !data) {
+        console.error('Login: user not found', error?.message);
+        return null;
+      }
+
+      // Support both hashed and legacy plain-text passwords
+      if (data.password_hash !== hashedInput && data.password_hash !== password) {
+        console.error('Login: invalid password');
+        return null;
+      }
+
+      const user = { ...data, id: data.id };
+      localStorage.setItem('ims_current_user', JSON.stringify(user));
+      return user;
+    } catch (err) {
+      console.error('loginUser exception:', err);
+      alert('Login Error: ' + err.message);
       return null;
     }
-
-    const user = { ...data, id: data.id };
-    localStorage.setItem('ims_current_user', JSON.stringify(user));
-    return user;
   };
 
   const addUser = async (newUser) => {

@@ -31,6 +31,7 @@ export function DataProvider({ children }) {
   }, []);
 
   const fetchAll = async () => {
+    if (!supabase) return;
     await Promise.all([fetchMarks(), fetchAttendance(), fetchFacultyAssignments()]);
   };
 

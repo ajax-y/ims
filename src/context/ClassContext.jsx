@@ -12,6 +12,7 @@ export function ClassProvider({ children }) {
   const [departments, setDepartments] = useState([]);
 
   useEffect(() => {
+    if (!supabase) return;
     fetchClasses();
     fetchDepartments();
   }, []);

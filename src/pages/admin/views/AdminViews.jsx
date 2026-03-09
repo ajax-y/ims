@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useClasses } from '../../../context/ClassContext';
 import { useUser } from '../../../context/UserContext';
 import { supabase } from '../../../lib/supabase';
-import * as XLSX from 'xlsx';
+// Dynamic import used below to prevent crash if dependency is missing
 
 export const AdminHomeView = () => {
   const { getStats, clearAllUsersExceptSelf } = useUser();
@@ -15,6 +15,7 @@ export const AdminHomeView = () => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const ab = e.target.result;
         const wb = XLSX.read(ab, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -88,6 +89,7 @@ export const TimetableUploadView = ({ type }) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const ab = e.target.result;
         const wb = XLSX.read(ab, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -179,6 +181,7 @@ export const ManageUsersView = ({ type }) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const ab = e.target.result;
         const wb = XLSX.read(ab, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -472,6 +475,7 @@ export const SemResultsView = () => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        const XLSX = await import('xlsx');
         const ab = e.target.result;
         const wb = XLSX.read(ab, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
