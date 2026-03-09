@@ -7,24 +7,43 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
   const dropdownRef = useRef(null);
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const [announcements, setAnnouncements] = useState([]);
+  const [notifs, setNotifs] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const notifRef = useRef(null);
 
   const fetchNotifications = async () => {
     if (!user?.id) return;
-    const { data, error } = await supabase
+    
+    // Fetch personal notifications
+    const { data: personalNotifs, error: pError } = await supabase
       .from('notifications')
       .select('*')
       .eq('recipient_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(20);
-    if (error) {
-      console.error('fetchNotifications:', error.message);
-      return;
-    }
-    setAnnouncements(data || []);
-    setUnreadCount((data || []).filter(n => !n.is_read).length);
+      .limit(15);
+      
+    // Fetch global announcements
+    const { data: globalAnnouncements, error: aError } = await supabase
+      .from('announcements')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (pError) console.error('fetchNotifications:', pError.message);
+    if (aError) console.error('fetchAnnouncements:', aError.message);
+
+    // Merge and sort
+    const merged = [
+      ...(personalNotifs || []).map(n => ({ ...n, type: 'personal' })),
+      ...(globalAnnouncements || []).map(a => ({ 
+        ...a, 
+        type: 'announcement', 
+        is_read: localStorage.getItem(`ims_read_announcement_${a.id}`) === 'true'
+      }))
+    ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    setNotifs(merged);
+    setUnreadCount(merged.filter(n => !n.is_read).length);
   };
 
   useEffect(() => {
@@ -38,14 +57,24 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
     setIsNotifOpen(nextState);
 
     if (nextState && unreadCount > 0) {
-      setUnreadCount(0);
-      const unreadIds = announcements.filter(n => !n.is_read).map(n => n.id);
-      if (unreadIds.length > 0) {
+      // Mark personal notifications as read in DB
+      const unreadPersonalIds = notifs
+        .filter(n => n.type === 'personal' && !n.is_read)
+        .map(n => n.id);
+        
+      if (unreadPersonalIds.length > 0) {
         await supabase
           .from('notifications')
           .update({ is_read: true })
-          .in('id', unreadIds);
+          .in('id', unreadPersonalIds);
       }
+      
+      // Mark announcements as read in LocalStorage
+      notifs.filter(n => n.type === 'announcement' && !n.is_read).forEach(a => {
+        localStorage.setItem(`ims_read_announcement_${a.id}`, 'true');
+      });
+
+      setUnreadCount(0);
       fetchNotifications();
     }
   };
@@ -130,18 +159,23 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
           {isNotifOpen && (
             <div className="fade-in notification-dropdown">
               <h3 style={{ fontSize: '1rem', fontWeight: '600', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>Notifications</h3>
-              {announcements.length === 0 ? (
+              {notifs.length === 0 ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', margin: '2rem 0' }}>No new notifications</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
-                  {announcements.map((a) => (
-                    <div key={a.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', opacity: a.is_read ? 0.7 : 1 }}>
+                  {notifs.map((n) => (
+                    <div key={`${n.type}-${n.id}`} style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem', opacity: n.is_read ? 0.7 : 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <h4 style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.25rem', color: a.is_read ? 'var(--text-muted)' : 'var(--text-main)' }}>{a.title}</h4>
-                        {!a.is_read && <span style={{ width: '8px', height: '8px', backgroundColor: 'var(--primary)', borderRadius: '50%' }}></span>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <h4 style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.25rem', color: n.is_read ? 'var(--text-muted)' : 'var(--text-main)' }}>
+                            {n.type === 'announcement' && <span style={{ backgroundColor: 'var(--primary)', color: 'white', fontSize: '0.7rem', padding: '1px 5px', borderRadius: '4px', marginRight: '5px' }}>GLOBAL</span>}
+                            {n.title}
+                          </h4>
+                        </div>
+                        {!n.is_read && <span style={{ width: '8px', height: '8px', backgroundColor: 'var(--primary)', borderRadius: '50%' }}></span>}
                       </div>
-                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>{a.message}</p>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(a.date_posted).toLocaleString()}</span>
+                      <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>{n.message}</p>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(n.created_at).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>

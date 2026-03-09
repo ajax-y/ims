@@ -11,19 +11,32 @@ export default function NotificationToast({ user }) {
     if (!user?.id) return;
 
     const fetchNotifications = async () => {
-      const { data, error } = await supabase
+      // Fetch personal notifications
+      const { data: pData, error: pError } = await supabase
         .from('notifications')
         .select('*')
         .eq('recipient_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(5);
 
-      if (error || !data) return;
+      // Fetch global announcements
+      const { data: aData, error: aError } = await supabase
+        .from('announcements')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      if (data.length > 0) {
-        const latest = data[0];
-        if (!seenIds.current.has(latest.id)) {
-          seenIds.current.add(latest.id);
+      if (pError || aError) return;
+
+      const merged = [
+        ...(pData || []).map(n => ({ ...n, toastId: `p-${n.id}` })),
+        ...(aData || []).map(a => ({ ...a, toastId: `a-${a.id}`, isAnnouncement: true }))
+      ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      if (merged.length > 0) {
+        const latest = merged[0];
+        if (!seenIds.current.has(latest.toastId)) {
+          seenIds.current.add(latest.toastId);
           if (!initialLoad.current) {
             setToast(latest);
             setTimeout(() => setToast(null), 5000);
@@ -58,7 +71,9 @@ export default function NotificationToast({ user }) {
     }}>
       <Bell size={24} style={{ flexShrink: 0 }} />
       <div>
-        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold' }}>{toast.title}</h4>
+        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold' }}>
+          {toast.isAnnouncement ? '📢 Announcement: ' : ''}{toast.title}
+        </h4>
         <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.9, marginTop: '0.25rem' }}>{toast.message}</p>
       </div>
     </div>
