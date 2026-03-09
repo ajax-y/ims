@@ -7,6 +7,7 @@ import { supabase } from '../../../lib/supabase';
 export const AdminHomeView = () => {
   const { getStats, clearAllUsersExceptSelf } = useUser();
   const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
   const stats = getStats();
   
   const handleUpload = async () => {
