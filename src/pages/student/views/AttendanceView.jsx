@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../../../context/DataContext';
 import { MapPin } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
 
 function AttendanceView({ user }) {
   const { getStudentAttendanceStats, getSubjectsForStudent } = useData();
@@ -16,42 +17,30 @@ function AttendanceView({ user }) {
       setCheckInMsg('Geolocation is not supported by your browser');
       return;
     }
-
     setCheckingIn(true);
     setCheckInMsg('Locating...');
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        try {
-          const token = localStorage.getItem('access_token');
-          const res = await fetch('http://localhost:8000/attendance/mark', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              student_id: 1, // Fallback since real dbId might be missing in context
-              status: 'Present',
-              latitude: latitude,
-              longitude: longitude
-            })
-          });
-
-          if (res.ok) {
-            setCheckInMsg('✅ Inside Campus: Checked In!');
-          } else {
-            // Fallback for demonstration since API is unreachable
-            setCheckInMsg('✅ Inside Campus: Checked In! (Local Fallback)');
-          }
-        } catch(err) {
-          console.warn('API unreachable, using local fallback for check-in');
-          setCheckInMsg('✅ Inside Campus: Checked In! (Local Fallback)');
+        // Upsert attendance record in Supabase
+        const current = globalStats;
+        const { error } = await supabase.from('attendance').upsert(
+          [{
+            student_id:        user?.id,
+            completed_periods: current.completedPeriods + 1,
+            attended_periods:  current.attendedPeriods + 1,
+          }],
+          { onConflict: 'student_id' }
+        );
+        if (error) {
+          setCheckInMsg('❌ Check-in failed: ' + error.message);
+        } else {
+          setCheckInMsg('✅ Inside Campus: Checked In!');
         }
         setCheckingIn(false);
       },
-      (err) => {
+      () => {
         setCheckInMsg('❌ Location access denied.');
         setCheckingIn(false);
       }

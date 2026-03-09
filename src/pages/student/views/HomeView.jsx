@@ -3,6 +3,8 @@ import { useData } from '../../../context/DataContext';
 import { AlertTriangle, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { supabase } from '../../../lib/supabase';
+
 
 const LiveIcon = () => (
   <span style={{
@@ -23,23 +25,11 @@ const CalendarCard = () => {
 
   useEffect(() => {
     const fetchCalendar = async () => {
-      try {
-        const res = await fetch('http://localhost:8000/admin/calendar', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setEvents(data);
-        } else {
-          throw new Error('API down');
-        }
-      } catch(err) {
-        console.warn('API down, using local mock calendar');
-        setEvents([
-          { date: new Date().toISOString(), event_name: 'Semester Start', description: 'Classes begin', is_holiday: false },
-          { date: new Date(Date.now() + 86400000 * 15).toISOString(), event_name: 'Public Holiday', description: 'National Holiday', is_holiday: true }
-        ]);
-      }
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .order('date', { ascending: true });
+      if (!error) setEvents(data || []);
       setLoading(false);
     };
     fetchCalendar();
@@ -121,28 +111,19 @@ function HomeView({ user }) {
   const [realCgpa, setRealCgpa] = useState(0);
 
   useEffect(() => {
-    // Only fetch for students
     if (user?.role !== 'student') return;
     const fetchResults = async () => {
-      try {
-        const res = await fetch('http://localhost:8000/admin/results/me', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+      const { data, error } = await supabase
+        .from('semester_results')
+        .select('*')
+        .eq('student_id', user.id);
+      if (!error && data && data.length > 0) {
+        let totalCredits = 0, totalPoints = 0;
+        data.forEach(sem => {
+          totalCredits += sem.total_credits;
+          totalPoints += (sem.gpa * sem.total_credits);
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.length > 0) {
-            let totalCredits = 0;
-            let totalPoints = 0;
-            data.forEach(sem => {
-              totalCredits += sem.total_credits;
-              totalPoints += (sem.gpa * sem.total_credits);
-            });
-            const cgpaVal = totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : 0;
-            setRealCgpa(cgpaVal);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch results", err);
+        if (totalCredits > 0) setRealCgpa((totalPoints / totalCredits).toFixed(2));
       }
     };
     fetchResults();

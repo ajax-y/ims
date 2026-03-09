@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useClasses } from '../../../context/ClassContext';
 import { useUser } from '../../../context/UserContext';
+import { supabase } from '../../../lib/supabase';
 
 export const AdminHomeView = () => {
   const { getStats, clearAllUsersExceptSelf } = useUser();
@@ -8,48 +9,10 @@ export const AdminHomeView = () => {
   const [loading, setLoading] = useState(false);
   const stats = getStats();
 
-  const handleClearAll = () => {
-    if (window.confirm("WARNING: This will delete ALL users (except you), ALL attendance, and ALL marks safely from the system. Are you sure?")) {
-      clearAllUsersExceptSelf('aden'); // Preserve default admin
-      localStorage.removeItem('ims_marks');
-      localStorage.removeItem('ims_attendance');
-      alert("System Reset Successfully! All data has been cleared.");
-      window.location.reload();
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) return alert("Please select an Excel file.");
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      const res = await fetch('http://localhost:8000/admin/upload/calendar', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        setFile(null);
-      } else {
-        alert(data.detail || "Upload failed");
-      }
-    } catch(err) {
-      alert("Upload failed: " + err.message);
-    }
-    setLoading(false);
-  };
-
   return (
     <div>
       <div className="mobile-wrap gap-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
         <h2 className="mobile-header-text" style={{ fontSize: '1.875rem', fontWeight: '700' }}>Admin Dashboard</h2>
-        <button className="btn btn-danger mobile-w-full" onClick={handleClearAll}>
-          ⚠️ Nuclear Reset (Clear All Data)
-        </button>
       </div>
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>College Statistics Overview</p>
 
@@ -90,28 +53,7 @@ export const TimetableUploadView = ({ type }) => {
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
-    if (!file) return alert("Please select an Excel file.");
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      const res = await fetch('http://localhost:8000/admin/upload/timetable', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        setFile(null);
-      } else {
-        alert(data.detail || "Upload failed");
-      }
-    } catch(err) {
-      alert("Upload failed: " + err.message);
-    }
-    setLoading(false);
+    alert("Timetable upload now managed via Supabase. Please insert entries directly in the Supabase Table Editor → timetable_entries table.");
   };
 
   return (
@@ -174,29 +116,7 @@ export const ManageUsersView = ({ type }) => {
   };
 
   const handleBulkUpload = async () => {
-    if (!bulkFile) return alert("Please select an Excel file for bulk upload.");
-    setBulkLoading(true);
-    const formData = new FormData();
-    formData.append('file', bulkFile);
-    
-    try {
-      const res = await fetch('http://localhost:8000/admin/upload/users', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        setBulkFile(null);
-        // In a real app we'd refresh the user list from the backend here.
-      } else {
-        alert(data.detail || "Upload failed");
-      }
-    } catch(err) {
-      alert("Upload failed: " + err.message);
-    }
-    setBulkLoading(false);
+    alert("Bulk user import: Please add users manually via the form below, or insert rows directly in the Supabase Table Editor → users table.");
   };
 
   return (
@@ -351,30 +271,32 @@ export const ManageUsersView = ({ type }) => {
 };
 
 export const ApprovalsView = () => {
-  const [requests, setRequests] = useState(() => {
-    const saved = localStorage.getItem('ims_leave_requests');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed)) return parsed;
-      } catch (e) {
-        console.error("Failed parsing leave requests", e);
-      }
-    }
-    return []; // Start empty unless applications exist
-  });
+  const [requests, setRequests] = useState([]);
+  const [activeTab, setActiveTab] = useState('pending');
 
-  const handleAction = (id, action) => {
-    const updated = requests.map(req => req.id === id ? { ...req, status: action } : req);
-    setRequests(updated);
-    localStorage.setItem('ims_leave_requests', JSON.stringify(updated));
+  useEffect(() => { fetchRequests(); }, []);
+
+  const fetchRequests = async () => {
+    const { data, error } = await supabase
+      .from('leave_requests')
+      .select('*')
+      .order('submitted_at', { ascending: false });
+    if (error) { console.error('fetchRequests:', error.message); return; }
+    setRequests(data || []);
+  };
+
+  const handleAction = async (id, action) => {
+    const { error } = await supabase
+      .from('leave_requests')
+      .update({ status: action })
+      .eq('id', id);
+    if (error) { alert('Action failed: ' + error.message); return; }
+    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: action } : r));
     alert(`${action} successfully.`);
   };
 
-  const pendingRequests = requests.filter(r => r.status === 'Pending' || !r.status);
+  const pendingRequests  = requests.filter(r => !r.status || r.status === 'Pending');
   const historicRequests = requests.filter(r => r.status === 'Approved' || r.status === 'Declined');
-
-  const [activeTab, setActiveTab] = useState('pending');
 
   return (
     <div>
@@ -456,28 +378,7 @@ export const SemResultsView = () => {
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
-    if (!file) return alert("Please select an Excel file.");
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-      const res = await fetch('http://localhost:8000/admin/upload/results', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` },
-        body: formData
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        setFile(null);
-      } else {
-        alert(data.detail || "Upload failed");
-      }
-    } catch(err) {
-      alert("Upload failed: " + err.message);
-    }
-    setLoading(false);
+    alert("Results upload now managed via Supabase. Please insert results directly in the Supabase Table Editor → semester_results table.");
   };
 
   return (
@@ -615,35 +516,41 @@ export const ManageClassesView = () => {
 };
 
 export const ManageAnnouncementsView = () => {
-  const [announcements, setAnnouncements] = useState(() => {
-    return JSON.parse(localStorage.getItem('ims_announcements') || '[]');
-  });
-  const [title, setTitle] = useState('');
+  const [announcements, setAnnouncements] = useState([]);
+  const [title, setTitle]     = useState('');
   const [message, setMessage] = useState('');
 
-  const handlePost = (e) => {
-    e.preventDefault();
-    if (!title || !message) return alert("Title and message required");
-    
-    const newAnnouncement = {
-      id: Date.now(),
-      title,
-      message,
-      date: new Date().toISOString()
-    };
-    const updated = [newAnnouncement, ...announcements];
-    setAnnouncements(updated);
-    localStorage.setItem('ims_announcements', JSON.stringify(updated));
-    setTitle('');
-    setMessage('');
-    alert("Announcement posted successfully!");
+  useEffect(() => { fetchAnnouncements(); }, []);
+
+  const fetchAnnouncements = async () => {
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) { console.error('fetchAnnouncements:', error.message); return; }
+    setAnnouncements(data || []);
   };
 
-  const handleDelete = (id) => {
-    if (!window.confirm("Delete announcement?")) return;
-    const updated = announcements.filter(a => a.id !== id);
-    setAnnouncements(updated);
-    localStorage.setItem('ims_announcements', JSON.stringify(updated));
+  const handlePost = async (e) => {
+    e.preventDefault();
+    if (!title || !message) return alert('Title and message required');
+
+    const { error } = await supabase
+      .from('announcements')
+      .insert([{ title, message }]);
+
+    if (error) { alert('Failed to post: ' + error.message); return; }
+    setTitle('');
+    setMessage('');
+    alert('Announcement posted successfully!');
+    await fetchAnnouncements();
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete announcement?')) return;
+    const { error } = await supabase.from('announcements').delete().eq('id', id);
+    if (error) { alert('Delete failed: ' + error.message); return; }
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
   };
 
   return (
@@ -676,7 +583,7 @@ export const ManageAnnouncementsView = () => {
                   <button onClick={() => handleDelete(a.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '0.8rem' }}>Delete</button>
                 </div>
                 <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{a.message}</p>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(a.date).toLocaleString()}</span>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(a.created_at).toLocaleString()}</span>
               </div>
             ))}
           </div>

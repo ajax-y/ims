@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function NotificationToast({ user }) {
   const [toast, setToast] = useState(null);
@@ -7,42 +8,35 @@ export default function NotificationToast({ user }) {
   const initialLoad = useRef(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     const fetchNotifications = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) return;
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('recipient_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
 
-        const res = await fetch('http://localhost:8000/notifications/', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+      if (error || !data) return;
 
-        if (res.ok) {
-          const data = await res.json();
-          const relevant = data.filter(n => n.target_role === 'All' || n.target_role.toLowerCase() === user.role.toLowerCase());
-          
-          if (relevant.length > 0) {
-            const latest = relevant[0];
-            if (!seenIds.current.has(latest.id)) {
-              seenIds.current.add(latest.id);
-              if (!initialLoad.current) {
-                setToast(latest);
-                setTimeout(() => setToast(null), 5000);
-              }
-            }
+      if (data.length > 0) {
+        const latest = data[0];
+        if (!seenIds.current.has(latest.id)) {
+          seenIds.current.add(latest.id);
+          if (!initialLoad.current) {
+            setToast(latest);
+            setTimeout(() => setToast(null), 5000);
           }
-          if (initialLoad.current) initialLoad.current = false;
         }
-      } catch (err) {}
+      }
+      if (initialLoad.current) initialLoad.current = false;
     };
 
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 5000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user?.id]);
 
   if (!toast) return null;
 

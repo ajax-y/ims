@@ -90,31 +90,6 @@ export function UserProvider({ children }) {
     setUsers(prev => prev.filter(u => u.id !== id));
   };
 
-  const clearAllUsersExceptSelf = async (currentAdminId) => {
-    const { error } = await supabase
-      .from('users')
-      .delete()
-      .neq('id', currentAdminId);
-    if (error) {
-      console.error('clearAllUsers failed:', error.message);
-      return;
-    }
-    await fetchUsers();
-  };
-
-  const resetToDefaults = async () => {
-    // Delete all and re-insert defaults
-    await supabase.from('users').delete().neq('id', '');
-    const defaultHashedPass = await hashPassword('password123');
-    const defaults = [
-      { id: 'aden',   name: 'Aden Admin', role: 'admin',   password_hash: defaultHashedPass },
-      { id: 'ajay',   name: 'Ajay',       role: 'faculty', password_hash: defaultHashedPass },
-      { id: 'aldrin', name: 'Aldrin',     role: 'student', department: 'B.E.ECE/01/A', password_hash: defaultHashedPass },
-      { id: 'kaviya', name: 'Kaviya',     role: 'student', department: 'B.E.CSE/02/B', password_hash: defaultHashedPass },
-    ];
-    await supabase.from('users').insert(defaults);
-    await fetchUsers();
-  };
 
   const getStudentsByClass = (className) => {
     return users.filter(u => u.role === 'student' && u.department === className);
@@ -153,8 +128,8 @@ export function UserProvider({ children }) {
 
   return (
     <UserContext.Provider value={{
-      users, loading, loginUser, addUser, deleteUser, clearAllUsersExceptSelf,
-      resetToDefaults, getStudentsByClass, getStats, updateUserProfile, fetchUsers
+      users, loading, loginUser, addUser, deleteUser,
+      getStudentsByClass, getStats, updateUserProfile, fetchUsers
     }}>
       {children}
     </UserContext.Provider>

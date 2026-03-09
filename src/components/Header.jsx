@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, Menu, LogOut, User, ChevronDown, UserCircle } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -11,56 +12,40 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
   const notifRef = useRef(null);
 
   const fetchNotifications = async () => {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
-    try {
-      const res = await fetch('http://localhost:8000/notifications/', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAnnouncements(data);
-        setUnreadCount(data.filter(n => !n.is_read).length);
-      }
-    } catch (err) {
-      console.error("Failed to fetch notifications", err);
-      // Fallback to local storage if API fails
-      const saved = JSON.parse(localStorage.getItem('ims_announcements') || '[]');
-      setAnnouncements(saved);
-      setUnreadCount(saved.length);
+    if (!user?.id) return;
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('recipient_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) {
+      console.error('fetchNotifications:', error.message);
+      return;
     }
+    setAnnouncements(data || []);
+    setUnreadCount((data || []).filter(n => !n.is_read).length);
   };
 
   useEffect(() => {
     fetchNotifications();
-    // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.id]);
 
   const handleToggleNotif = async () => {
     const nextState = !isNotifOpen;
     setIsNotifOpen(nextState);
-    
+
     if (nextState && unreadCount > 0) {
-      // Optimistically clear unread count UI
       setUnreadCount(0);
-      
-      // Mark all visible as read in backend
-      const token = localStorage.getItem('access_token');
       const unreadIds = announcements.filter(n => !n.is_read).map(n => n.id);
-      
-      for (const id of unreadIds) {
-        try {
-          await fetch(`http://localhost:8000/notifications/${id}/read`, {
-            method: 'PATCH',
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-        } catch (err) {
-          console.error("Failed to mark notification as read", id, err);
-        }
+      if (unreadIds.length > 0) {
+        await supabase
+          .from('notifications')
+          .update({ is_read: true })
+          .in('id', unreadIds);
       }
-      // Refresh to get updated is_read status
       fetchNotifications();
     }
   };

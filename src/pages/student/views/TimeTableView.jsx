@@ -3,6 +3,7 @@ import { useData } from '../../../context/DataContext';
 import { Info, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { supabase } from '../../../lib/supabase';
 
 function TimeTableView({ user }) {
   const { getAssignmentsForFaculty } = useData();
@@ -18,40 +19,29 @@ function TimeTableView({ user }) {
   useEffect(() => {
     const fetchTimetable = async () => {
       if (!classId) return setLoading(false);
-      try {
-        const res = await fetch(`http://localhost:8000/admin/timetable/${classId}`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
-        });
-        if (res.ok) {
-          const rawData = await res.json();
-          // Transform back to grid view
-          const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-          const grid = days.map(d => {
-            const row = { day: d, p1:'', p2:'', p3:'', p4:'Break', p5:'', p6:'', p7:'' };
-            const dayEntries = rawData.filter(e => e.day_of_week === d);
-            dayEntries.forEach(e => {
-              if(e.period_number >= 1 && e.period_number <= 7) {
-                if (e.period_number === 4) row.p4 = e.subject_name;
-                else row[`p${e.period_number}`] = e.subject_name;
-              }
-            });
-            return row;
-          });
-          setScheduleData(grid);
-        } else {
-          throw new Error('API down');
-        }
-      } catch(err) {
-        console.warn('API down, using local mock timetable');
-        // Render localized mock timetable
-        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-        const grid = days.map(d => ({
-          day: d,
-          p1: 'Subject 1', p2: 'Subject 2', p3: 'Subject 3', 
-          p4: 'Break', p5: 'Subject 4', p6: 'Subject 5', p7: 'Library'
-        }));
-        setScheduleData(grid);
+      const { data, error } = await supabase
+        .from('timetable_entries')
+        .select('*')
+        .eq('class_id', classId);
+
+      if (error) {
+        console.error('fetchTimetable:', error.message);
+        setLoading(false);
+        return;
       }
+
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+      const grid = days.map(d => {
+        const row = { day: d, p1:'', p2:'', p3:'', p4:'Break', p5:'', p6:'', p7:'' };
+        (data || []).filter(e => e.day_of_week === d).forEach(e => {
+          if (e.period_number >= 1 && e.period_number <= 7) {
+            if (e.period_number === 4) row.p4 = e.subject_name;
+            else row[`p${e.period_number}`] = e.subject_name;
+          }
+        });
+        return row;
+      });
+      setScheduleData(grid);
       setLoading(false);
     };
     fetchTimetable();

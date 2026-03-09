@@ -147,19 +147,13 @@ export function DataProvider({ children }) {
     return facultyAssignments.filter(a => a.assigned_class_node === classNode);
   };
 
-  const clearAllData = async () => {
-    await supabase.from('marks').delete().neq('student_id', '');
-    await supabase.from('attendance').delete().neq('student_id', '');
-    setMarks({});
-    setAttendance({});
-  };
 
   return (
     <DataContext.Provider value={{
       marks, updateMark, getStudentMarks, getCGPA,
       attendance, incrementClassAttendance, getStudentAttendanceStats,
       facultyAssignments, assignClassToFaculty, getAssignmentsForFaculty, getSubjectsForStudent,
-      clearAllData, fetchAll
+      fetchAll
     }}>
       {children}
     </DataContext.Provider>
