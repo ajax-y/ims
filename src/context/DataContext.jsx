@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const DataContext = createContext();
 
@@ -9,66 +10,52 @@ export function useData() {
 // Convert letter grade to grade points
 const getGradePoints = (grade) => {
   switch (grade) {
-    case 'O': return 10;
+    case 'O':  return 10;
     case 'A+': return 9;
-    case 'A': return 8;
+    case 'A':  return 8;
     case 'B+': return 7;
-    case 'B': return 6;
-    case 'C': return 5;
-    default: return 0;
+    case 'B':  return 6;
+    case 'C':  return 5;
+    default:   return 0;
   }
 };
 
 export function DataProvider({ children }) {
-  // Store marks map: { studentId: { 'CAT Marks': { 'C01': 95, ... }, ... } }
-  const [marks, setMarks] = useState(() => {
-    const saved = localStorage.getItem('ims_marks');
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  // Store attendance map structurally: 
-  // { studentId: { completedPeriods: 100, attendedPeriods: 85 } }
-  const [attendance, setAttendance] = useState(() => {
-    const saved = localStorage.getItem('ims_attendance_struct');
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  // Store faculty assignments:
-  // Array of { id, facultyId, year, department, section, subject }
-  const [facultyAssignments, setFacultyAssignments] = useState(() => {
-    const saved = localStorage.getItem('ims_faculty_assignments');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Local state mirrors — populated from Supabase on mount
+  const [marks, setMarks] = useState({});
+  const [attendance, setAttendance] = useState({});
+  const [facultyAssignments, setFacultyAssignments] = useState([]);
 
   useEffect(() => {
-    localStorage.setItem('ims_marks', JSON.stringify(marks));
-  }, [marks]);
+    fetchAll();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('ims_attendance_struct', JSON.stringify(attendance));
-  }, [attendance]);
-
-  useEffect(() => {
-    localStorage.setItem('ims_faculty_assignments', JSON.stringify(facultyAssignments));
-  }, [facultyAssignments]);
-
-  const assignClassToFaculty = (assignment) => {
-    const newAssignment = {
-      ...assignment,
-      id: Date.now().toString()
-    };
-    setFacultyAssignments(prev => [...prev, newAssignment]);
+  const fetchAll = async () => {
+    await Promise.all([fetchMarks(), fetchAttendance(), fetchFacultyAssignments()]);
   };
 
-  const getAssignmentsForFaculty = (facultyId) => {
-    return facultyAssignments.filter(a => a.facultyId === facultyId);
+  // ---- MARKS ----
+  const fetchMarks = async () => {
+    const { data, error } = await supabase.from('marks').select('*');
+    if (error) { console.error('fetchMarks:', error.message); return; }
+    // Rebuild nested map: { studentId: { examType: { subject: value } } }
+    const map = {};
+    (data || []).forEach(row => {
+      if (!map[row.student_id]) map[row.student_id] = {};
+      if (!map[row.student_id][row.exam_type]) map[row.student_id][row.exam_type] = {};
+      map[row.student_id][row.exam_type][row.subject] = row.value;
+    });
+    setMarks(map);
   };
 
-  const getSubjectsForStudent = (classNode) => {
-    return facultyAssignments.filter(a => a.assignedClassNode === classNode);
-  };
+  const updateMark = async (studentId, examType, subject, value) => {
+    // Upsert by natural key (student_id, exam_type, subject)
+    const { error } = await supabase.from('marks').upsert(
+      [{ student_id: studentId, exam_type: examType, subject, value }],
+      { onConflict: 'student_id,exam_type,subject' }
+    );
+    if (error) { console.error('updateMark:', error.message); return; }
 
-  const updateMark = (studentId, examType, subject, value) => {
     setMarks(prev => ({
       ...prev,
       [studentId]: {
@@ -86,82 +73,93 @@ export function DataProvider({ children }) {
     return marks[studentId][examType];
   };
 
-  // Helper to calculate CGPA
   const getCGPA = (studentId) => {
-    // Assuming simple average for demonstration.
-    // To calculate CGPA properly, we'll average the CAT marks out of 10 for simplicity
-    // Or if there's a specific "Semester Final" we'd use that.
-    // For this context, let's derive it from CAT Marks C01-C05
     const catMarks = getStudentMarks(studentId, 'CAT Marks');
     const values = Object.values(catMarks).map(v => parseInt(v) || 0);
-    if (values.length === 0) return 0.00;
-    
-    // Scale marks (out of 100) to GPA (out of 10)
+    if (values.length === 0) return '0.00';
     const gpaSum = values.reduce((acc, curr) => acc + (curr / 10), 0);
     return (gpaSum / values.length).toFixed(2);
   };
 
-  // Transactional style attendance update
-  const incrementClassAttendance = async (studentIds, presentIds, subjectName) => {
-    setAttendance(prev => {
-      const next = { ...prev };
-      
-      studentIds.forEach(id => {
-        const currentStats = next[id] || { completedPeriods: 0, attendedPeriods: 0 };
-        const isPresent = presentIds.includes(id);
-        
-        next[id] = {
-          completedPeriods: currentStats.completedPeriods + 1,
-          attendedPeriods: isPresent ? currentStats.attendedPeriods + 1 : currentStats.attendedPeriods
-        };
-      });
-      
-      return next;
+  // ---- ATTENDANCE ----
+  const fetchAttendance = async () => {
+    const { data, error } = await supabase.from('attendance').select('*');
+    if (error) { console.error('fetchAttendance:', error.message); return; }
+    // Rebuild map: { studentId: { completedPeriods, attendedPeriods } }
+    const map = {};
+    (data || []).forEach(row => {
+      map[row.student_id] = {
+        completedPeriods: row.completed_periods,
+        attendedPeriods:  row.attended_periods,
+      };
     });
+    setAttendance(map);
+  };
 
-    // Send to backend
-    const token = localStorage.getItem('access_token');
-    // Note: In this mock/simplified system, we might need a mapping from username to numeric ID.
-    // For now, we'll try to find the user in the 'users' state if available.
-    // However, DataContext doesn't have access to users. We'll assume the backend can handle the student_id or we'll pass 1 as a placeholder as before, but with the real subject.
-    // Ideally, we'd have a mapping. 
-    
+  const incrementClassAttendance = async (studentIds, presentIds) => {
     for (const studentId of studentIds) {
+      const current = attendance[studentId] || { completedPeriods: 0, attendedPeriods: 0 };
       const isPresent = presentIds.includes(studentId);
-      try {
-        await fetch('http://localhost:8000/attendance/mark', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            student_id: 1, // Placeholder: Backend actually needs the integer ID
-            status: isPresent ? 'Present' : 'Absent',
-            subject: subjectName
-          })
-        });
-      } catch (err) {
-        console.error("Failed to mark attendance for", studentId, err);
-      }
+      const updated = {
+        student_id:        studentId,
+        completed_periods: current.completedPeriods + 1,
+        attended_periods:  isPresent ? current.attendedPeriods + 1 : current.attendedPeriods,
+      };
+      const { error } = await supabase.from('attendance').upsert(
+        [updated],
+        { onConflict: 'student_id' }
+      );
+      if (error) console.error('incrementAttendance:', studentId, error.message);
     }
+    await fetchAttendance();
   };
 
   const getStudentAttendanceStats = (studentId) => {
     return attendance[studentId] || { completedPeriods: 0, attendedPeriods: 0 };
   };
 
-  const clearAllData = () => {
+  // ---- FACULTY ASSIGNMENTS ----
+  const fetchFacultyAssignments = async () => {
+    const { data, error } = await supabase.from('faculty_assignments').select('*');
+    if (error) { console.error('fetchFacultyAssignments:', error.message); return; }
+    setFacultyAssignments(data || []);
+  };
+
+  const assignClassToFaculty = async (assignment) => {
+    const row = {
+      faculty_id:          assignment.facultyId,
+      year:                assignment.year,
+      department:          assignment.department,
+      section:             assignment.section,
+      subject:             assignment.subject,
+      assigned_class_node: assignment.assignedClassNode,
+    };
+    const { data, error } = await supabase.from('faculty_assignments').insert([row]).select();
+    if (error) { console.error('assignClassToFaculty:', error.message); return; }
+    setFacultyAssignments(prev => [...prev, ...(data || [])]);
+  };
+
+  const getAssignmentsForFaculty = (facultyId) => {
+    return facultyAssignments.filter(a => a.faculty_id === facultyId);
+  };
+
+  const getSubjectsForStudent = (classNode) => {
+    return facultyAssignments.filter(a => a.assigned_class_node === classNode);
+  };
+
+  const clearAllData = async () => {
+    await supabase.from('marks').delete().neq('student_id', '');
+    await supabase.from('attendance').delete().neq('student_id', '');
     setMarks({});
     setAttendance({});
   };
 
   return (
-    <DataContext.Provider value={{ 
+    <DataContext.Provider value={{
       marks, updateMark, getStudentMarks, getCGPA,
       attendance, incrementClassAttendance, getStudentAttendanceStats,
       facultyAssignments, assignClassToFaculty, getAssignmentsForFaculty, getSubjectsForStudent,
-      clearAllData
+      clearAllData, fetchAll
     }}>
       {children}
     </DataContext.Provider>

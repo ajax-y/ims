@@ -13,9 +13,7 @@ function App() {
   const TIMEOUT_DURATION = 5 * 60 * 1000;
 
   const resetTimeout = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
     if (currentUser) {
       timeoutRef.current = setTimeout(() => {
         handleLogout();
@@ -25,50 +23,27 @@ function App() {
   };
 
   useEffect(() => {
-    // Listen to user activity to reset the inactivity timer
     const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
     const handleActivity = () => resetTimeout();
-    
     events.forEach(event => window.addEventListener(event, handleActivity));
-    resetTimeout(); // Initialize
-    
+    resetTimeout();
     return () => {
       events.forEach(event => window.removeEventListener(event, handleActivity));
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [currentUser]);
 
+  // Restore session from localStorage (set by loginUser in UserContext)
   useEffect(() => {
-    const checkSession = async () => {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        try {
-          const res = await fetch('http://localhost:8000/auth/me', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            setCurrentUser({ ...data, id: data.username });
-          } else {
-            // API is up but token is invalid
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('ims_current_user');
-          }
-        } catch (err) {
-          console.error("Session verification failed, applying offline fallback", err);
-          // Fallback to local user state if API is completely unreachable
-          const localStoredUser = JSON.parse(localStorage.getItem('ims_current_user') || 'null');
-          if (localStoredUser) {
-            setCurrentUser(localStoredUser);
-          } else {
-            localStorage.removeItem('access_token');
-          }
-        }
+    const stored = localStorage.getItem('ims_current_user');
+    if (stored) {
+      try {
+        setCurrentUser(JSON.parse(stored));
+      } catch (e) {
+        localStorage.removeItem('ims_current_user');
       }
-      setLoading(false);
-    };
-    
-    checkSession();
+    }
+    setLoading(false);
   }, []);
 
   const handleLogin = (user) => {
@@ -77,21 +52,23 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
     localStorage.removeItem('ims_current_user');
     setCurrentUser(null);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   };
 
   if (loading) {
-    return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading IMS...</div>;
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        Loading IMS...
+      </div>
+    );
   }
 
   if (!currentUser) {
     return <Login onLogin={handleLogin} />;
   }
 
-  // Very simple role-based routing
   switch (currentUser.role) {
     case 'student':
       return <StudentDashboard user={currentUser} onLogout={handleLogout} />;

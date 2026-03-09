@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const UserContext = createContext();
 
@@ -6,98 +7,113 @@ export function useUser() {
   return useContext(UserContext);
 }
 
-// Default initial state matching user request
-// Industry Standard Asynchronous SHA-256 Hash via Web Crypto API
+// SHA-256 hash (same salt as before for backward compat)
 const hashPassword = async (password) => {
   if (!password) return '';
   const msgUint8 = new TextEncoder().encode(password + "_ims_secure_salt_v2");
   const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  // Convert buffer to hex string
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
 export function UserProvider({ children }) {
-  const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('ims_users');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) return parsed;
-      } catch (e) {
-        console.error("Failed parsing users", e);
-      }
-    }
-    // Return pre-compiled hashed defaults if nothing in localStorage
-    const defaultHashedPass = 'b5ef1b8c42abdd1c1dd339a2ae8358ed88adcdb251c000af735f069e62213c49';
-    return [
-      { id: 'aden', password: defaultHashedPass, name: 'Aden Admin', role: 'admin' },
-      { id: 'ajay', password: defaultHashedPass, name: 'Ajay', role: 'faculty' },
-      { id: 'aldrin', password: defaultHashedPass, name: 'Aldrin', role: 'student', department: 'B.E.ECE/01/A' },
-      { id: 'kaviya', password: defaultHashedPass, name: 'Kaviya', role: 'student', department: 'B.E.CSE/02/B' }
-    ];
-  });
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch all users from Supabase on mount
   useEffect(() => {
-    // Ensure the users are saved to local storage on initial boot
-    if (!localStorage.getItem('ims_users')) {
-      localStorage.setItem('ims_users', JSON.stringify(users));
-    }
-  }, [users]);
+    fetchUsers();
+  }, []);
 
-  // Authenticate user
+  const fetchUsers = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('users').select('*');
+    if (error) {
+      console.error('Failed to fetch users:', error.message);
+    } else {
+      setUsers(data || []);
+    }
+    setLoading(false);
+  };
+
+  // Authenticate user against Supabase
   const loginUser = async (id, password) => {
-    // Backend is down, so bypass API entirely to make login instant.
-    console.log("Backend offline override: Instant local login");
-    
     const hashedInput = await hashPassword(password);
-    const localUser = users.find(u => {
-      const matchId = u.id === id || u.username === id;
-      // Allow legacy plain-text match for backward compatibility, prefer hashed
-      const matchPass = u.password === hashedInput || u.password === password;
-      return matchId && matchPass;
-    });
 
-    if (localUser) {
-      // Create a mock token for local session
-      localStorage.setItem('access_token', 'mock_local_token_' + Date.now());
-      localStorage.setItem('ims_current_user', JSON.stringify(localUser));
-      return localUser;
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      console.error('Login: user not found', error?.message);
+      return null;
     }
-    
-    console.error("Login failed: Invalid credentials");
-    return null;
+
+    // Support both hashed and legacy plain-text passwords
+    if (data.password_hash !== hashedInput && data.password_hash !== password) {
+      console.error('Login: invalid password');
+      return null;
+    }
+
+    const user = { ...data, id: data.id };
+    localStorage.setItem('ims_current_user', JSON.stringify(user));
+    return user;
   };
 
   const addUser = async (newUser) => {
-    // Check if ID already exists
-    if (users.some(u => u.id.toLowerCase() === newUser.id.toLowerCase())) {
-      return false; // User exists
+    const hashedPassword = await hashPassword(newUser.password);
+    const userToInsert = {
+      id: newUser.id,
+      name: newUser.name,
+      role: newUser.role,
+      department: newUser.department || null,
+      password_hash: hashedPassword,
+    };
+
+    const { error } = await supabase.from('users').insert([userToInsert]);
+    if (error) {
+      console.error('addUser failed:', error.message);
+      return false;
     }
-    
-    const hashedNewPassword = await hashPassword(newUser.password);
-    const userToSave = { ...newUser, password: hashedNewPassword };
-    setUsers(prev => [...prev, userToSave]);
+    await fetchUsers();
     return true;
   };
 
-  const deleteUser = (id) => {
-    setUsers(users.filter(u => u.id !== id));
+  const deleteUser = async (id) => {
+    const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) {
+      console.error('deleteUser failed:', error.message);
+      return;
+    }
+    setUsers(prev => prev.filter(u => u.id !== id));
   };
 
-  const clearAllUsersExceptSelf = (currentAdminId) => {
-    setUsers(users.filter(u => u.id === currentAdminId));
+  const clearAllUsersExceptSelf = async (currentAdminId) => {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .neq('id', currentAdminId);
+    if (error) {
+      console.error('clearAllUsers failed:', error.message);
+      return;
+    }
+    await fetchUsers();
   };
 
   const resetToDefaults = async () => {
-    const defaultHashedPass = 'b5ef1b8c42abdd1c1dd339a2ae8358ed88adcdb251c000af735f069e62213c49';
-    setUsers([
-      { id: 'aden', password: defaultHashedPass, name: 'Aden Admin', role: 'admin' },
-      { id: 'ajay', password: defaultHashedPass, name: 'Ajay', role: 'faculty' },
-      { id: 'aldrin', password: defaultHashedPass, name: 'Aldrin', role: 'student', department: 'B.E.ECE/01/A' },
-      { id: 'kaviya', password: defaultHashedPass, name: 'Kaviya', role: 'student', department: 'B.E.CSE/02/B' }
-    ]);
+    // Delete all and re-insert defaults
+    await supabase.from('users').delete().neq('id', '');
+    const defaultHashedPass = await hashPassword('password123');
+    const defaults = [
+      { id: 'aden',   name: 'Aden Admin', role: 'admin',   password_hash: defaultHashedPass },
+      { id: 'ajay',   name: 'Ajay',       role: 'faculty', password_hash: defaultHashedPass },
+      { id: 'aldrin', name: 'Aldrin',     role: 'student', department: 'B.E.ECE/01/A', password_hash: defaultHashedPass },
+      { id: 'kaviya', name: 'Kaviya',     role: 'student', department: 'B.E.CSE/02/B', password_hash: defaultHashedPass },
+    ];
+    await supabase.from('users').insert(defaults);
+    await fetchUsers();
   };
 
   const getStudentsByClass = (className) => {
@@ -107,29 +123,38 @@ export function UserProvider({ children }) {
   const getStats = () => {
     const studentCount = users.filter(u => u.role === 'student').length;
     const facultyCount = users.filter(u => u.role === 'faculty').length;
-    const adminCount = users.filter(u => u.role === 'admin').length;
+    const adminCount   = users.filter(u => u.role === 'admin').length;
     return { studentCount, facultyCount, adminCount };
   };
 
   const updateUserProfile = async (userId, newProfileData) => {
     let finalData = { ...newProfileData };
     if (finalData.password) {
-      // Fetch the user to check if password changed
-      const usr = users.find(u => u.id === userId);
-      if (usr && finalData.password !== usr.password) {
-        finalData.password = await hashPassword(finalData.password);
-      }
+      finalData.password_hash = await hashPassword(finalData.password);
+      delete finalData.password;
     }
 
-    setUsers(prevUsers => 
-      prevUsers.map(u => u.id === userId ? { ...u, ...finalData } : u)
-    );
+    const { error } = await supabase
+      .from('users')
+      .update(finalData)
+      .eq('id', userId);
+
+    if (error) {
+      console.error('updateUserProfile failed:', error.message);
+      return;
+    }
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...finalData } : u));
+    // Update cached session if current user
+    const stored = JSON.parse(localStorage.getItem('ims_current_user') || 'null');
+    if (stored && stored.id === userId) {
+      localStorage.setItem('ims_current_user', JSON.stringify({ ...stored, ...finalData }));
+    }
   };
 
   return (
-    <UserContext.Provider value={{ 
-      users, loginUser, addUser, deleteUser, clearAllUsersExceptSelf, 
-      resetToDefaults, getStudentsByClass, getStats, updateUserProfile
+    <UserContext.Provider value={{
+      users, loading, loginUser, addUser, deleteUser, clearAllUsersExceptSelf,
+      resetToDefaults, getStudentsByClass, getStats, updateUserProfile, fetchUsers
     }}>
       {children}
     </UserContext.Provider>
