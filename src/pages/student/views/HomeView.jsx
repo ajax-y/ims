@@ -4,6 +4,7 @@ import { AlertTriangle, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { supabase } from '../../../lib/supabase';
+import AnnouncementFeed from '../../../components/AnnouncementFeed';
 
 
 const LiveIcon = () => (
@@ -219,6 +220,8 @@ function HomeView({ user }) {
           </div>
         </div>
       </div>
+      
+      <AnnouncementFeed />
 
       <CalendarCard />
     </div>

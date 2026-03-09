@@ -2,12 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { useClasses } from '../../../context/ClassContext';
 import { useUser } from '../../../context/UserContext';
 import { supabase } from '../../../lib/supabase';
+import * as XLSX from 'xlsx';
 
 export const AdminHomeView = () => {
   const { getStats, clearAllUsersExceptSelf } = useUser();
   const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
   const stats = getStats();
+  
+  const handleUpload = async () => {
+    if (!file) return alert("Select a file");
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const ab = e.target.result;
+        const wb = XLSX.read(ab, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(ws);
+        
+        const { error } = await supabase.from('calendar_events').insert(jsonData.map(row => ({
+          date: row.date,
+          event_name: row.event_name,
+          description: row.description,
+          is_holiday: row.is_holiday === 'TRUE' || row.is_holiday === true
+        })));
+        
+        if (error) throw error;
+        alert("Calendar updated successfully");
+        setFile(null);
+      } catch (err) {
+        alert("Upload failed: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
 
   return (
     <div>
@@ -53,7 +83,35 @@ export const TimetableUploadView = ({ type }) => {
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
-    alert("Timetable upload now managed via Supabase. Please insert entries directly in the Supabase Table Editor → timetable_entries table.");
+    if (!file) return alert("Select a file");
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const ab = e.target.result;
+        const wb = XLSX.read(ab, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(ws);
+        
+        const { error } = await supabase.from('timetable_entries').insert(jsonData.map(row => ({
+          day_of_week: row.day_of_week,
+          class_id: row.class_id,
+          period_number: parseInt(row.period_number),
+          subject_name: row.subject_name,
+          faculty_id: row.faculty_id,
+          room_number: row.room_number?.toString()
+        })));
+        
+        if (error) throw error;
+        alert("Timetable updated successfully");
+        setFile(null);
+      } catch (err) {
+        alert("Upload failed: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   return (
@@ -116,7 +174,38 @@ export const ManageUsersView = ({ type }) => {
   };
 
   const handleBulkUpload = async () => {
-    alert("Bulk user import: Please add users manually via the form below, or insert rows directly in the Supabase Table Editor → users table.");
+    if (!bulkFile) return alert("Select a file");
+    setBulkLoading(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const ab = e.target.result;
+        const wb = XLSX.read(ab, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(ws);
+        
+        // Use UserContext's addUser pattern or bulk insert directly
+        const usersToInsert = jsonData.map(row => ({
+          id: row.username || row.id,
+          name: row.name,
+          role: row.role,
+          department: row.department || null,
+          password_hash: row.password // In a real app, hash this!
+        }));
+        
+        const { error } = await supabase.from('users').insert(usersToInsert);
+        if (error) throw error;
+        
+        alert(`Successfully imported ${usersToInsert.length} users`);
+        setBulkFile(null);
+        // Refresh users in context
+      } catch (err) {
+        alert("Upload failed: " + err.message);
+      } finally {
+        setBulkLoading(false);
+      }
+    };
+    reader.readAsArrayBuffer(bulkFile);
   };
 
   return (
@@ -378,7 +467,33 @@ export const SemResultsView = () => {
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
-    alert("Results upload now managed via Supabase. Please insert results directly in the Supabase Table Editor → semester_results table.");
+    if (!file) return alert("Select a file");
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const ab = e.target.result;
+        const wb = XLSX.read(ab, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(ws);
+        
+        const { error } = await supabase.from('semester_results').insert(jsonData.map(row => ({
+          student_id: row.student_username || row.student_id,
+          semester: parseInt(row.semester),
+          gpa: parseFloat(row.gpa),
+          total_credits: parseInt(row.total_credits)
+        })));
+        
+        if (error) throw error;
+        alert("Results updated successfully");
+        setFile(null);
+      } catch (err) {
+        alert("Upload failed: " + err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   return (
