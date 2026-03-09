@@ -31,17 +31,18 @@ function Layout({ user, role, activeTab, onTabChange, onLogout, children }) {
         <Header user={user} onToggleSidebar={toggleSidebar} onLogout={onLogout} onTabChange={onTabChange} />
       </div>
       
-      <div style={{ display: 'flex', flex: 1, marginTop: '70px' }}>
+      <div style={{ display: 'flex', flex: 1, marginTop: '70px', position: 'relative' }}>
         <Sidebar role={role} activeTab={activeTab} onTabChange={onTabChange} isOpen={isSidebarOpen} />
         
-        <main style={{
+        <main className="mobile-p-1" style={{
           flex: 1,
           padding: '2rem',
           marginLeft: isSidebarOpen && window.innerWidth >= 768 ? '260px' : '0',
           transition: 'var(--transition)',
           width: '100%',
-          maxWidth: '100%',
-          overflowX: 'hidden'
+          maxWidth: '100vw',
+          overflowX: 'hidden',
+          minHeight: 'calc(100vh - 70px)'
         }}>
           {children}
         </main>

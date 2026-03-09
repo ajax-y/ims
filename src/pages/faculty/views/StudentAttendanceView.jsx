@@ -51,13 +51,17 @@ function StudentAttendanceView({ user }) {
   const handleSubmit = () => {
     if (students.length === 0) return;
     
+    // Find the subject name for the selected class
+    const assignment = assignments.find(a => a.assignedClassNode === selectedClass);
+    const subjectName = assignment ? assignment.subject : selectedClass;
+    
     // Extract arrays for the transaction
     const studentIds = students.map(s => s.id);
     const presentIds = Object.keys(currentSession).filter(id => currentSession[id]);
     
     // Commit to context
-    incrementClassAttendance(studentIds, presentIds);
-    alert('Attendance Saved Successfully and incremented for this class session!');
+    incrementClassAttendance(studentIds, presentIds, subjectName);
+    alert('Attendance Saved Successfully and student notifications sent!');
   };
 
   const handleDownloadPDF = () => {

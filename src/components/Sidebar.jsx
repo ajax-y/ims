@@ -49,7 +49,7 @@ function Sidebar({ role, activeTab, onTabChange, isOpen }) {
   else if (role === 'admin') links = adminLinks;
 
   return (
-    <aside style={{
+    <aside className="sidebar" style={{
       width: '260px',
       backgroundColor: 'var(--card-bg)',
       borderRight: '1px solid var(--border)',

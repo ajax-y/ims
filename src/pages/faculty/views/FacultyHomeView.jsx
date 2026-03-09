@@ -57,11 +57,7 @@ function FacultyHomeView({ user }) {
           </p>
         </div>
       ) : (
-        <div className="grid-mobile-1col" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '1.5rem'
-        }}>
+        <div className="grid-responsive">
           {assignments.map(cls => {
             const classStudents = getStudentsByClass(cls.assignedClassNode);
             

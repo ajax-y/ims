@@ -54,7 +54,7 @@ const ProfileView = ({ user }) => {
 
   return (
     <div className="fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div className="profile-header">
         <h2 style={{ fontSize: '1.5rem', fontWeight: '700' }}>My Profile</h2>
         {!isEditing ? (
           <button 
@@ -75,7 +75,7 @@ const ProfileView = ({ user }) => {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 2fr', gap: '2rem' }}>
+      <div className="profile-grid">
         
         {/* Left Column - Read Only Admin Data */}
         <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -177,7 +177,7 @@ const ProfileView = ({ user }) => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 1fr) minmax(200px, 1fr)', gap: '1.5rem' }}>
+            <div className="grid-2col">
               <div className="input-group">
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Droplet size={16} className="text-danger" /> Blood Group</label>
                 <select 

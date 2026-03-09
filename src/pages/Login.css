@@ -80,6 +80,35 @@
   }
   .login-left, .login-right {
     flex: none;
-    min-height: 50vh;
+    min-height: auto;
+    width: 100%;
+  }
+  .login-left {
+    padding: 2rem 1rem;
+  }
+  .login-right {
+    padding: 2rem 1rem;
+    background: var(--bg-color);
+  }
+  .login-card {
+    padding: 1.5rem;
+  }
+  .login-logo {
+    max-width: 150px;
+    margin-bottom: 1rem;
+  }
+  .login-left-text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  .login-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-left-text {
+    display: none;
   }
 }

@@ -7,12 +7,63 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
 
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const notifRef = useRef(null);
 
+  const fetchNotifications = async () => {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    try {
+      const res = await fetch('http://localhost:8000/notifications/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAnnouncements(data);
+        setUnreadCount(data.filter(n => !n.is_read).length);
+      }
+    } catch (err) {
+      console.error("Failed to fetch notifications", err);
+      // Fallback to local storage if API fails
+      const saved = JSON.parse(localStorage.getItem('ims_announcements') || '[]');
+      setAnnouncements(saved);
+      setUnreadCount(saved.length);
+    }
+  };
+
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('ims_announcements') || '[]');
-    setAnnouncements(saved);
-  }, [isNotifOpen]);
+    fetchNotifications();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleToggleNotif = async () => {
+    const nextState = !isNotifOpen;
+    setIsNotifOpen(nextState);
+    
+    if (nextState && unreadCount > 0) {
+      // Optimistically clear unread count UI
+      setUnreadCount(0);
+      
+      // Mark all visible as read in backend
+      const token = localStorage.getItem('access_token');
+      const unreadIds = announcements.filter(n => !n.is_read).map(n => n.id);
+      
+      for (const id of unreadIds) {
+        try {
+          await fetch(`http://localhost:8000/notifications/${id}/read`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        } catch (err) {
+          console.error("Failed to mark notification as read", id, err);
+        }
+      }
+      // Refresh to get updated is_read status
+      fetchNotifications();
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -26,18 +77,19 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
   return (
     <header style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 1.5rem',
+      padding: '0 1rem', // Reduced from 1.5rem
       height: '70px',
       backgroundColor: 'var(--card-bg)',
       borderBottom: '1px solid var(--border)',
       boxShadow: 'var(--shadow-sm)'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <button 
           onClick={onToggleSidebar}
           style={{
@@ -54,47 +106,57 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
         >
           <Menu size={24} color="var(--text-main)" />
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '1.25rem', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span className="mobile-header-text" style={{ fontSize: '1.25rem', fontWeight: '800', color: '#000000', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>
             IMS Portal
           </span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         
         {/* NOTIFICATIONS DROPDOWN */}
         <div style={{ position: 'relative' }} ref={notifRef}>
           <button 
-            onClick={() => setIsNotifOpen(!isNotifOpen)}
+            onClick={handleToggleNotif}
             style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: '0.5rem' }}
           >
             <Bell size={20} color="var(--text-muted)" className="hover:text-primary transition-colors" />
-            {announcements.length > 0 && (
+            {unreadCount > 0 && (
               <span style={{
                 position: 'absolute',
                 top: 4,
                 right: 4,
-                width: '8px',
-                height: '8px',
+                minWidth: '14px',
+                height: '14px',
                 backgroundColor: 'var(--danger)',
-                borderRadius: '50%'
-              }}></span>
+                borderRadius: '50%',
+                color: 'white',
+                fontSize: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '2px',
+                fontWeight: 'bold'
+              }}>{unreadCount}</span>
             )}
           </button>
 
           {isNotifOpen && (
             <div className="fade-in notification-dropdown">
-              <h3 style={{ fontSize: '1rem', fontWeight: '600', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>Announcements</h3>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>Notifications</h3>
               {announcements.length === 0 ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', margin: '2rem 0' }}>No new announcements</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', margin: '2rem 0' }}>No new notifications</p>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
                   {announcements.map((a) => (
-                    <div key={a.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-                      <h4 style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.25rem' }}>{a.title}</h4>
+                    <div key={a.id} style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', opacity: a.is_read ? 0.7 : 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <h4 style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '0.25rem', color: a.is_read ? 'var(--text-muted)' : 'var(--text-main)' }}>{a.title}</h4>
+                        {!a.is_read && <span style={{ width: '8px', height: '8px', backgroundColor: 'var(--primary)', borderRadius: '50%' }}></span>}
+                      </div>
                       <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '0.25rem' }}>{a.message}</p>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(a.date).toLocaleDateString()}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(a.date_posted).toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -133,27 +195,14 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
             }}>
               <User size={18} />
             </div>
-            <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>
+            <span className="header-username" style={{ fontSize: '0.875rem', fontWeight: '500' }}>
               {user.name}
             </span>
             <ChevronDown size={16} />
           </button>
 
           {isDropdownOpen && (
-            <div style={{
-              position: 'absolute',
-              top: 'calc(100% + 10px)',
-              right: 0,
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: 'var(--shadow-lg)',
-              border: '1px solid var(--border)',
-              width: '200px',
-              overflow: 'hidden',
-              zIndex: 1000
-            }}
-            className="fade-in"
-            >
+            <div className="fade-in header-user-dropdown">
               <div style={{
                 padding: '1rem',
                 borderBottom: '1px solid var(--border)',

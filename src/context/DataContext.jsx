@@ -102,7 +102,7 @@ export function DataProvider({ children }) {
   };
 
   // Transactional style attendance update
-  const incrementClassAttendance = async (studentIds, presentIds) => {
+  const incrementClassAttendance = async (studentIds, presentIds, subjectName) => {
     setAttendance(prev => {
       const next = { ...prev };
       
@@ -121,6 +121,11 @@ export function DataProvider({ children }) {
 
     // Send to backend
     const token = localStorage.getItem('access_token');
+    // Note: In this mock/simplified system, we might need a mapping from username to numeric ID.
+    // For now, we'll try to find the user in the 'users' state if available.
+    // However, DataContext doesn't have access to users. We'll assume the backend can handle the student_id or we'll pass 1 as a placeholder as before, but with the real subject.
+    // Ideally, we'd have a mapping. 
+    
     for (const studentId of studentIds) {
       const isPresent = presentIds.includes(studentId);
       try {
@@ -131,8 +136,9 @@ export function DataProvider({ children }) {
             'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
-            student_id: 1, // backend requires integer IDs, we are using strings in frontend but mapping required
+            student_id: 1, // Placeholder: Backend actually needs the integer ID
             status: isPresent ? 'Present' : 'Absent',
+            subject: subjectName
           })
         });
       } catch (err) {

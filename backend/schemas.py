@@ -28,6 +28,7 @@ class AttendanceBase(BaseModel):
 
 class AttendanceCreate(AttendanceBase):
     student_id: int
+    subject: Optional[str] = None
 
 class AttendanceResponse(AttendanceBase):
     id: int
@@ -59,6 +60,7 @@ class NotificationBase(BaseModel):
     title: str
     message: str
     recipient_role: str
+    recipient_id: Optional[int] = None
 
 class NotificationCreate(NotificationBase):
     pass
@@ -66,6 +68,7 @@ class NotificationCreate(NotificationBase):
 class NotificationResponse(NotificationBase):
     id: int
     date_posted: datetime
+    is_read: bool
 
     class Config:
         from_attributes = True

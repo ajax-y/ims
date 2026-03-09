@@ -190,10 +190,9 @@ function HomeView({ user }) {
         </div>
       )}
 
-      <div className="grid-mobile-1col" style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '1.5rem'
+      <div className="grid-responsive" style={{
+        marginTop: '1.5rem',
+        marginBottom: '2rem'
       }}>
         {/* Blue Progress Ring - CGPA */}
         <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>

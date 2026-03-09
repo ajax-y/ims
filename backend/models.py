@@ -27,6 +27,7 @@ class Attendance(Base):
     student_id = Column(Integer, ForeignKey("users.id"))
     date = Column(DateTime, default=datetime.datetime.utcnow)
     status = Column(String) # 'Present', 'Absent', 'Late'
+    subject = Column(String, nullable=True) # Context for attendance
     latitude = Column(Float, nullable=True) # For smart attendance geo-fencing
     longitude = Column(Float, nullable=True)
 
@@ -50,6 +51,8 @@ class Notification(Base):
     message = Column(String)
     date_posted = Column(DateTime, default=datetime.datetime.utcnow)
     recipient_role = Column(String) # 'all', 'student', 'faculty'
+    recipient_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    is_read = Column(Boolean, default=False)
 
 class CalendarEvent(Base):
     __tablename__ = "calendar_events"

@@ -122,6 +122,23 @@ async def upload_timetable_excel(
             added_count += 1
             
         db.commit()
+        
+        # After successful timetable import, notify faculty members
+        # Distinct faculty identifiers in the uploaded timetable
+        faculty_ids = df['faculty_id'].unique()
+        for f_id in faculty_ids:
+            # Find the user by username (faculty_id in timetable is likely the username)
+            faculty_user = db.query(models.User).filter(models.User.username == str(f_id)).first()
+            if faculty_user:
+                notif = models.Notification(
+                    title="New Class Schedule Assigned",
+                    message="The Admin has updated the timetable. New classes have been assigned to you.",
+                    recipient_role="faculty",
+                    recipient_id=faculty_user.id
+                )
+                db.add(notif)
+        
+        db.commit()
         return {"message": f"Successfully imported {added_count} timetable entries."}
         
     except Exception as e:

@@ -46,14 +46,14 @@ export const AdminHomeView = () => {
   return (
     <div>
       <div className="mobile-wrap gap-4" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <h2 style={{ fontSize: '1.875rem', fontWeight: '700' }}>Admin Dashboard</h2>
-        <button className="btn btn-danger" onClick={handleClearAll}>
+        <h2 className="mobile-header-text" style={{ fontSize: '1.875rem', fontWeight: '700' }}>Admin Dashboard</h2>
+        <button className="btn btn-danger mobile-w-full" onClick={handleClearAll}>
           ⚠️ Nuclear Reset (Clear All Data)
         </button>
       </div>
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>College Statistics Overview</p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div className="grid-responsive" style={{ marginBottom: '2rem' }}>
         <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--primary)' }}>
           <p className="text-muted">Total Students</p>
           <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.studentCount}</h3>
@@ -115,7 +115,7 @@ export const TimetableUploadView = ({ type }) => {
   };
 
   return (
-    <div className="card" style={{ padding: '2rem', maxWidth: '600px' }}>
+    <div className="card mobile-p-1" style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.5rem' }}>
         Upload {isStudent ? 'Student' : 'Faculty'} Time Table
       </h2>
@@ -200,7 +200,7 @@ export const ManageUsersView = ({ type }) => {
   };
 
   return (
-    <div className="card" style={{ padding: '2rem', maxWidth: '600px' }}>
+    <div className="card mobile-p-1" style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>
         {isEditing ? `Edit ${type} Details` : `Add New ${type === 'student' ? 'Student' : type === 'faculty' ? 'Faculty' : 'Admin'}`}
       </h2>

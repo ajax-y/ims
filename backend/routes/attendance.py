@@ -43,10 +43,26 @@ def mark_attendance(
     db_attendance = models.Attendance(
         student_id=attendance.student_id,
         status=attendance.status,
+        subject=attendance.subject,
         latitude=attendance.latitude,
         longitude=attendance.longitude
     )
     db.add(db_attendance)
+    
+    # Create notification for the student
+    notif_title = f"Attendance Marked: {attendance.status}"
+    # We try to get the subject name to make it more descriptive
+    subject_desc = attendance.subject if attendance.subject else "Class"
+    notif_msg = f"You have been marked as {attendance.status} for {subject_desc} by {current_user.name}."
+    
+    db_notification = models.Notification(
+        title=notif_title,
+        message=notif_msg,
+        recipient_role="student",
+        recipient_id=attendance.student_id
+    )
+    db.add(db_notification)
+    
     db.commit()
     db.refresh(db_attendance)
     return db_attendance
