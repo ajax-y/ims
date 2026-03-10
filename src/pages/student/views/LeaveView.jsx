@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { useToast } from '../../../context/ToastContext';
+import { Paperclip } from 'lucide-react';
 
 function LeaveView({ user }) {
   const [type, setType]         = useState('leave');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate]     = useState('');
   const [reason, setReason]     = useState('');
+  const [proofFile, setProofFile] = useState(null);
   const [history, setHistory]   = useState([]);
   const [loading, setLoading]   = useState(false);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    fetchHistory();
-  }, [user?.id]);
+  useEffect(() => { fetchHistory(); }, [user?.id]);
 
   const fetchHistory = async () => {
     if (!user?.id) return;
@@ -30,6 +30,25 @@ function LeaveView({ user }) {
     e.preventDefault();
     setLoading(true);
 
+    let proof_url = null;
+
+    // Upload proof file if provided
+    if (proofFile) {
+      const ext = proofFile.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('leave-proofs')
+        .upload(filePath, proofFile, { contentType: proofFile.type });
+
+      if (uploadError) {
+        showToast('Proof upload failed: ' + uploadError.message, 'error');
+        setLoading(false);
+        return;
+      }
+      const { data: urlData } = supabase.storage.from('leave-proofs').getPublicUrl(filePath);
+      proof_url = urlData?.publicUrl || null;
+    }
+
     const { error } = await supabase.from('leave_requests').insert([{
       user_id:      user.id,
       name:         `${user.name} (${user.id})`,
@@ -38,6 +57,7 @@ function LeaveView({ user }) {
       to_date:      toDate,
       dates:        `${fromDate} to ${toDate}`,
       reason,
+      proof_url,
       status:       'Pending',
       submitted_at: new Date().toISOString(),
     }]);
@@ -46,9 +66,7 @@ function LeaveView({ user }) {
       showToast('Failed to submit request: ' + error.message, 'error');
     } else {
       showToast('Request submitted successfully!', 'success');
-      setFromDate('');
-      setToDate('');
-      setReason('');
+      setFromDate(''); setToDate(''); setReason(''); setProofFile(null);
       await fetchHistory();
     }
     setLoading(false);
@@ -83,6 +101,17 @@ function LeaveView({ user }) {
           <textarea rows="4" value={reason} onChange={(e) => setReason(e.target.value)} required placeholder="Type your reason here..."></textarea>
         </div>
 
+        <div className="input-group">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <Paperclip size={15} /> Attach Proof <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>(optional — image or PDF)</span>
+          </label>
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            onChange={e => setProofFile(e.target.files[0] || null)}
+          />
+        </div>
+
         <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={loading}>
           {loading ? 'Submitting...' : 'Submit Request'}
         </button>
@@ -103,6 +132,7 @@ function LeaveView({ user }) {
                   <th>Type</th>
                   <th>Dates</th>
                   <th>Reason</th>
+                  <th>Proof</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -116,6 +146,12 @@ function LeaveView({ user }) {
                     </td>
                     <td>{req.dates}</td>
                     <td className="text-muted" style={{ maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{req.reason}</td>
+                    <td>
+                      {req.proof_url
+                        ? <a href={req.proof_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'underline', fontSize: '0.85rem' }}>View</a>
+                        : <span className="text-muted" style={{ fontSize: '0.8rem' }}>—</span>
+                      }
+                    </td>
                     <td>
                       <span style={{
                         padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', fontWeight: '600',
@@ -135,5 +171,6 @@ function LeaveView({ user }) {
     </div>
   );
 }
+
 
 export default LeaveView;

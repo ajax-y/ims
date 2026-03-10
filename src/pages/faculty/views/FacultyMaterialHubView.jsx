@@ -3,10 +3,12 @@ import { useClasses } from '../../../context/ClassContext';
 import { supabase } from '../../../lib/supabase';
 import { FileUp, Trash2, File as FileIcon, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
 
 const FacultyMaterialHubView = ({ user }) => {
   const { classes } = useClasses();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [selectedClass, setSelectedClass] = useState('');
   const [subjectName, setSubjectName] = useState('');
   const [file, setFile] = useState(null);
@@ -91,7 +93,8 @@ const FacultyMaterialHubView = ({ user }) => {
   };
 
   const handleDelete = async (material) => {
-    if (!window.confirm('Are you sure you want to delete this material?')) return;
+    const ok = await confirm('This will permanently delete the file from storage.', 'Delete Material?');
+    if (!ok) return;
 
     // Delete from storage
     if (material.file_path) {

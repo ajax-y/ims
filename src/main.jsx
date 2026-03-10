@@ -6,6 +6,7 @@ import { ClassProvider } from './context/ClassContext.jsx'
 import { UserProvider } from './context/UserContext.jsx'
 import { DataProvider } from './context/DataContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
+import { ConfirmProvider } from './context/ConfirmContext.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 // Suppress browser alert popups for global errors - log to console instead
@@ -22,13 +23,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
       <ToastProvider>
-        <UserProvider>
-          <DataProvider>
-            <ClassProvider>
-              <App />
-            </ClassProvider>
-          </DataProvider>
-        </UserProvider>
+        <ConfirmProvider>
+          <UserProvider>
+            <DataProvider>
+              <ClassProvider>
+                <App />
+              </ClassProvider>
+            </DataProvider>
+          </UserProvider>
+        </ConfirmProvider>
       </ToastProvider>
     </ErrorBoundary>
   </React.StrictMode>,

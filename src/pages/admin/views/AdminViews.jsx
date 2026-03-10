@@ -3,11 +3,33 @@ import { useClasses } from '../../../context/ClassContext';
 import { useUser } from '../../../context/UserContext';
 import { supabase } from '../../../lib/supabase';
 import { useToast } from '../../../context/ToastContext';
+import { useConfirm } from '../../../context/ConfirmContext';
+import { hashPassword } from '../../../lib/crypto';
+import Pagination from '../../../components/Pagination';
 // Dynamic import used below to prevent crash if dependency is missing
 
 export const AdminHomeView = () => {
   const { getStats, clearAllUsersExceptSelf } = useUser();
   const { showToast } = useToast();
+  const [chartData, setChartData] = useState([]);
+
+  useEffect(() => {
+    // Generate dummy chart data for now based on classes
+    // In a real app, this would fetch from an attendance aggregation query
+    setChartData([
+      { name: 'B.E.CSE/A', attendance: 85 },
+      { name: 'B.E.ECE/A', attendance: 78 },
+      { name: 'B.TECH.IT/A', attendance: 92 },
+      { name: 'B.E.MECH/A', attendance: 65 },
+      { name: 'B.E.CIVIL/A', attendance: 70 },
+    ]);
+  }, []);
+
+  // Use dynamic import for recharts to avoid crash if not installed
+  const [Recharts, setRecharts] = useState(null);
+  useEffect(() => {
+    import('recharts').then(mod => setRecharts(mod)).catch(err => console.warn('Recharts not available'));
+  }, []);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const stats = getStats();
@@ -64,6 +86,26 @@ export const AdminHomeView = () => {
           <h3 style={{ fontSize: '2.5rem', fontWeight: '700' }}>{stats.adminCount}</h3>
         </div>
       </div>
+
+      {Recharts && (
+        <div className="card" style={{ padding: '2rem', marginTop: '2rem', marginBottom: '2rem' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem' }}>Average Attendance by Class (%)</h3>
+          <div style={{ width: '100%', height: 300 }}>
+            <Recharts.ResponsiveContainer width="100%" height="100%">
+              <Recharts.BarChart data={chartData}>
+                <Recharts.CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <Recharts.XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                <Recharts.YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} domain={[0, 100]} />
+                <Recharts.Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border)', borderRadius: 'var(--radius-md)' }}
+                  itemStyle={{ color: 'var(--primary)', fontWeight: '600' }}
+                />
+                <Recharts.Bar dataKey="attendance" fill="var(--primary)" radius={[4, 4, 0, 0]} barSize={40} />
+              </Recharts.BarChart>
+            </Recharts.ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Academic Calendar</h3>
@@ -144,17 +186,37 @@ export const ManageUsersView = ({ type }) => {
   const { classes, departments } = useClasses();
   const { addUser, users, deleteUser, updateUserProfile } = useUser();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [formData, setFormData] = useState({ 
     name: '', id: '', password: '', department: '', email: '', mobileNumber: '' 
   });
   const [isEditing, setIsEditing] = useState(false);
-  
   const [bulkFile, setBulkFile] = useState(null);
   const [bulkLoading, setBulkLoading] = useState(false);
+  // Pagination
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+  // Password reset
+  const [resetUserId, setResetUserId] = useState(null);
+  const [resetPwd, setResetPwd] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
 
   const filteredUsers = users.filter(u => u.role === type);
+  const pagedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleResetPassword = async () => {
+    if (!resetPwd.trim()) { showToast('Enter a new password.', 'warning'); return; }
+    setResetLoading(true);
+    const hashed = await hashPassword(resetPwd);
+    const { error } = await supabase.from('users').update({ password_hash: hashed }).eq('id', resetUserId);
+    setResetLoading(false);
+    if (error) { showToast('Reset failed: ' + error.message, 'error'); return; }
+    showToast('Password reset successfully!', 'success');
+    setResetUserId(null);
+    setResetPwd('');
+  };
 
   const handleAddUser = async () => {
     if (type === 'student' && !formData.department) {
@@ -195,21 +257,20 @@ export const ManageUsersView = ({ type }) => {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(ws);
         
-        // Use UserContext's addUser pattern or bulk insert directly
-        const usersToInsert = jsonData.map(row => ({
+        // Hash each password before inserting (security fix)
+        const usersToInsert = await Promise.all(jsonData.map(async row => ({
           id: row.username || row.id,
           name: row.name,
           role: row.role,
           department: row.department || null,
-          password_hash: row.password // In a real app, hash this!
-        }));
+          password_hash: await hashPassword(row.password || row.password_hash || ''),
+        })));
         
         const { error } = await supabase.from('users').insert(usersToInsert);
         if (error) throw error;
         
         showToast(`Successfully imported ${usersToInsert.length} users!`, 'success');
         setBulkFile(null);
-        // Refresh users in context
       } catch (err) {
         showToast('Upload failed: ' + err.message, 'error');
       } finally {
@@ -309,7 +370,7 @@ export const ManageUsersView = ({ type }) => {
                   <td colSpan={type === 'admin' ? 5 : 6} className="text-center text-muted">No {type}s found.</td>
                 </tr>
               ) : (
-                filteredUsers.map(u => (
+                pagedUsers.map(u => (
                   <tr key={u.id}>
                     <td>
                       <div style={{ width: '40px', height: '40px', borderRadius: '50%', overflow: 'hidden', backgroundColor: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -327,8 +388,8 @@ export const ManageUsersView = ({ type }) => {
                       <div style={{ color: 'var(--text-muted)' }}>{u.email || '-'}</div>
                       <div style={{ color: 'var(--text-muted)' }}>{u.mobileNumber || '-'}</div>
                     </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <td>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         <button 
                           className="btn btn-primary" 
                           style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
@@ -342,17 +403,24 @@ export const ManageUsersView = ({ type }) => {
                               mobileNumber: u.mobileNumber || ''
                             });
                             setIsEditing(true);
-                            // Scroll to top of form
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                           }}
                         >
                           Edit
                         </button>
                         <button 
+                          className="btn" 
+                          style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem', backgroundColor: '#f59e0b', color: 'white' }}
+                          onClick={() => { setResetUserId(u.id); setResetPwd(''); }}
+                        >
+                          Reset Pwd
+                        </button>
+                        <button 
                           className="btn btn-danger" 
                           style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
-                          onClick={() => {
-                            if (window.confirm(`Are you sure you want to delete ${u.name}?`)) deleteUser(u.id);
+                          onClick={async () => {
+                            const ok = await confirm(`This will permanently delete ${u.name}'s account.`, `Delete ${u.name}?`);
+                            if (ok) deleteUser(u.id);
                           }}
                         >
                           Delete
@@ -364,8 +432,33 @@ export const ManageUsersView = ({ type }) => {
               )}
             </tbody>
           </table>
+          {/* Pagination */}
+          <Pagination total={filteredUsers.length} page={page} pageSize={PAGE_SIZE} onChange={setPage} />
         </div>
       </div>
+
+      {/* Password Reset Modal */}
+      {resetUserId && (
+        <div
+          onClick={() => setResetUserId(null)}
+          style={{ position:'fixed', inset:0, backgroundColor:'rgba(0,0,0,0.45)', zIndex:99998, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}
+        >
+          <div onClick={e => e.stopPropagation()} className="fade-in" style={{ backgroundColor:'var(--card-bg)', borderRadius:'var(--radius-lg)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)', padding:'2rem', width:'100%', maxWidth:'380px', border:'1px solid var(--border)' }}>
+            <h3 style={{ fontSize:'1.1rem', fontWeight:'700', marginBottom:'1rem' }}>Reset Password</h3>
+            <p style={{ fontSize:'0.85rem', color:'var(--text-muted)', marginBottom:'1rem' }}>Setting new password for: <strong>{resetUserId}</strong></p>
+            <div className="input-group">
+              <label>New Password</label>
+              <input type="password" value={resetPwd} onChange={e => setResetPwd(e.target.value)} placeholder="Enter new password" />
+            </div>
+            <div style={{ display:'flex', gap:'0.75rem', justifyContent:'flex-end', marginTop:'1rem' }}>
+              <button onClick={() => setResetUserId(null)} style={{ padding:'0.6rem 1.25rem', border:'1px solid var(--border)', borderRadius:'var(--radius-md)', background:'transparent', cursor:'pointer' }}>Cancel</button>
+              <button onClick={handleResetPassword} disabled={resetLoading} style={{ padding:'0.6rem 1.25rem', border:'none', borderRadius:'var(--radius-md)', background:'var(--warning)', color:'white', cursor:'pointer', fontWeight:'600' }}>
+                {resetLoading ? 'Saving...' : 'Reset Password'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -547,6 +640,7 @@ export const SemResultsView = () => {
 export const ManageClassesView = () => {
   const { classes, addClass, deleteClass, departments, addDepartment, deleteDepartment } = useClasses();
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const [newClass, setNewClass] = useState('');
   const [newDept, setNewDept] = useState('');
 
@@ -594,7 +688,7 @@ export const ManageClassesView = () => {
                 {d}
                 <button 
                   style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0.2rem' }}
-                  onClick={() => { if(window.confirm(`Delete department ${d}?`)) deleteDepartment(d); }}
+                  onClick={async () => { if (await confirm(`Remove department "${d}"?`, 'Delete Department?')) deleteDepartment(d); }}
                   title="Remove Department"
                 >
                   ✕
@@ -631,7 +725,7 @@ export const ManageClassesView = () => {
                 <button 
                   className="btn btn-danger" 
                   style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem' }}
-                  onClick={() => { if(window.confirm(`Delete class ${c}?`)) deleteClass(c); }}
+                  onClick={async () => { if (await confirm(`Remove class "${c}"?`, 'Delete Class?')) deleteClass(c); }}
                 >
                   Delete
                 </button>
@@ -678,7 +772,7 @@ export const ManageAnnouncementsView = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this announcement?')) return;
+    if (!(await confirm('Are you sure you want to delete this announcement?', 'Delete Announcement?'))) return;
     const { error } = await supabase.from('announcements').delete().eq('id', id);
     if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
     setAnnouncements(prev => prev.filter(a => a.id !== id));

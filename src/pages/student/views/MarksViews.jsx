@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../../context/DataContext';
+import { supabase } from '../../../lib/supabase';
 
 export const CATMarks = ({ user }) => {
   const { getStudentMarks, getSubjectsForStudent } = useData();
@@ -139,12 +140,35 @@ export const AssignmentMarks = ({ user }) => {
   );
 }
 
+
+// GradeBook uses the imports from the top of the file
+
 export const GradeBook = ({ user }) => {
   const { getSubjectsForStudent } = useData();
   const [sem, setSem] = useState('01');
   const [show, setShow] = useState(false);
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
   
   const mySubjects = getSubjectsForStudent(user?.department);
+
+  const fetchResults = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('semester_results')
+      .select('*')
+      .eq('student_id', user.id)
+      .eq('semester', parseInt(sem));
+    
+    if (error) {
+      console.error('fetchResults error:', error);
+      setResults([]);
+    } else {
+      setResults(data || []);
+    }
+    setLoading(false);
+    setShow(true);
+  };
 
   return (
     <div>
@@ -164,7 +188,9 @@ export const GradeBook = ({ user }) => {
             <option value="08">Semester 8 (Year 4)</option>
           </select>
         </div>
-        <button className="btn btn-primary mobile-w-full" onClick={() => setShow(true)}>Submit</button>
+        <button className="btn btn-primary mobile-w-full" onClick={fetchResults} disabled={loading}>
+          {loading ? 'Fetching...' : 'Submit'}
+        </button>
       </div>
 
       {show && (
@@ -173,42 +199,35 @@ export const GradeBook = ({ user }) => {
             <table>
               <thead>
                 <tr>
-                  <th>S.No</th><th>Academic Year</th><th>Semester</th><th>Subject Code</th>
-                  <th>Subject Name</th><th>Grade</th><th>Result</th><th>Exam Month and Year</th>
+                  <th>S.No</th><th>Semester</th><th>GPA</th><th>Total Credits</th><th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {mySubjects.length === 0 ? (
-                  <tr><td colSpan="8" className="text-center text-muted">No subjects assigned yet.</td></tr>
-                ) : mySubjects.map((row, idx) => {
-                  // For simulation purposes using O grade
-                  const grade = 'O'; 
-                  const result = 'Pass';
-                  
-                  return (
-                    <tr key={row.id || idx}>
-                      <td>{idx + 1}</td><td>2025-2026</td><td>{sem}</td><td>-</td>
-                      <td className="font-bold">{row.subject}</td>
-                      <td>{grade}</td>
-                      <td className="text-success font-bold">{result}</td>
-                      <td>Nov 2025</td>
+                {results && results.length > 0 ? (
+                  results.map((res, idx) => (
+                    <tr key={res.id}>
+                      <td>{idx + 1}</td>
+                      <td>Semester {res.semester}</td>
+                      <td className="font-bold">{res.gpa.toFixed(2)}</td>
+                      <td>{res.total_credits}</td>
+                      <td className="text-success font-bold">Pass</td>
                     </tr>
-                  );
-                })}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="text-center text-muted">
+                      No results found for this semester.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
           <div style={{ padding: '1.5rem', backgroundColor: 'var(--secondary)', borderRadius: 'var(--radius-md)' }}>
-            <p className="font-bold" style={{ marginBottom: '0.5rem' }}>Legends:</p>
-            <ul style={{ listStyleType: 'none', display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.875rem' }}>
-              <li><strong>RA</strong> - Reappearance is required</li>
-              <li><strong>RA*</strong> - Absent for End exam</li>
-              <li><strong>W/WD</strong> - Withdrawal</li>
-              <li><strong>SA</strong> - Shortage of Attendance</li>
-              <li><strong>SE</strong> - Sports Exemption</li>
-              <li><strong>Wh1</strong> - Suspected Malpractise</li>
-              <li><strong>Wh2</strong> - Contact COE Office</li>
-            </ul>
+            <p className="font-bold" style={{ marginBottom: '0.5rem' }}>Semester Stats Summary:</p>
+            <p className="text-muted" style={{ fontSize: '0.875rem' }}>
+              Individual subject marks are available in CAT, LAB, and Assignment views. This table shows the consolidated semester performance as uploaded by the administrator.
+            </p>
           </div>
         </>
       )}

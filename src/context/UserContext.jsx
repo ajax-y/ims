@@ -1,29 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { hashPassword } from '../lib/crypto';
 
 const UserContext = createContext();
 
 export function useUser() {
   return useContext(UserContext);
 }
-
-// SHA-256 hash (same salt as before for backward compat)
-const hashPassword = async (password) => {
-  if (!password) return '';
-  try {
-    const msgUint8 = new TextEncoder().encode(password + "_ims_secure_salt_v2");
-    if (!window.crypto || !window.crypto.subtle) {
-      console.warn('Crypto subtle not available (non-secure context?). Falling back to plain text for local dev.');
-      return password; 
-    }
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  } catch (err) {
-    console.error('hashPassword error:', err);
-    return password;
-  }
-};
 
 export function UserProvider({ children }) {
   const [users, setUsers] = useState([]);

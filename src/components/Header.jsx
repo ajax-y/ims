@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Menu, LogOut, User, ChevronDown, UserCircle } from 'lucide-react';
+import { Bell, Menu, LogOut, User, ChevronDown, UserCircle, Sun, Moon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
@@ -10,6 +10,22 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
   const [notifs, setNotifs] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const notifRef = useRef(null);
+
+  // Dark mode
+  const [isDark, setIsDark] = useState(() => document.documentElement.getAttribute('data-theme') === 'dark');
+  const toggleDark = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.setAttribute('data-theme', next ? 'dark' : '');
+    localStorage.setItem('ims_dark_mode', next ? '1' : '0');
+  };
+  useEffect(() => {
+    const saved = localStorage.getItem('ims_dark_mode');
+    if (saved === '1') {
+      setIsDark(true);
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  }, []);
 
   const fetchNotifications = async () => {
     if (!user?.id) return;
@@ -135,6 +151,15 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         
+        {/* Dark Mode Toggle */}
+        <button
+          onClick={toggleDark}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem', display: 'flex', alignItems: 'center', borderRadius: 'var(--radius-md)' }}
+        >
+          {isDark ? <Sun size={20} color="#f59e0b" /> : <Moon size={20} color="var(--text-muted)" />}
+        </button>
+
         {/* NOTIFICATIONS DROPDOWN */}
         <div style={{ position: 'relative' }} ref={notifRef}>
           <button 
