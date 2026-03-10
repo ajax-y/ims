@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { UserCircle, Save, Edit2, Mail, Phone, MapPin, Droplet, HeartPulse, Camera } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import { useToast } from '../context/ToastContext';
 
 const ProfileView = ({ user }) => {
   const { updateUserProfile } = useUser();
+  const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   
   // Local state for editable fields
@@ -45,9 +47,9 @@ const ProfileView = ({ user }) => {
   const handleSave = () => {
     if (updateUserProfile) {
       updateUserProfile(user.id, formData);
-      alert("Profile updated successfully.");
+      showToast('Profile updated successfully!', 'success');
     } else {
-      alert("User context update function missing!");
+      showToast('Profile update failed. Please try again.', 'error');
     }
     setIsEditing(false);
   };

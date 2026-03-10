@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useClasses } from '../../../context/ClassContext';
 import { useUser } from '../../../context/UserContext';
 import { supabase } from '../../../lib/supabase';
+import { useToast } from '../../../context/ToastContext';
 // Dynamic import used below to prevent crash if dependency is missing
 
 export const AdminHomeView = () => {
   const { getStats, clearAllUsersExceptSelf } = useUser();
+  const { showToast } = useToast();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const stats = getStats();
   
   const handleUpload = async () => {
-    if (!file) return alert("Select a file");
+    if (!file) { showToast('Please select a file first.', 'warning'); return; }
     setLoading(true);
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -30,10 +32,10 @@ export const AdminHomeView = () => {
         })));
         
         if (error) throw error;
-        alert("Calendar updated successfully");
+        showToast('Academic calendar updated successfully!', 'success');
         setFile(null);
       } catch (err) {
-        alert("Upload failed: " + err.message);
+        showToast('Upload failed: ' + err.message, 'error');
       } finally {
         setLoading(false);
       }
@@ -81,11 +83,12 @@ export const AdminHomeView = () => {
 export const TimetableUploadView = ({ type }) => {
   const isStudent = type === 'student';
   const { classes } = useClasses();
+  const { showToast } = useToast();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
-    if (!file) return alert("Select a file");
+    if (!file) { showToast('Please select a file first.', 'warning'); return; }
     setLoading(true);
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -106,10 +109,10 @@ export const TimetableUploadView = ({ type }) => {
         })));
         
         if (error) throw error;
-        alert("Timetable updated successfully");
+        showToast('Timetable updated successfully!', 'success');
         setFile(null);
       } catch (err) {
-        alert("Upload failed: " + err.message);
+        showToast('Upload failed: ' + err.message, 'error');
       } finally {
         setLoading(false);
       }
@@ -140,6 +143,7 @@ export const TimetableUploadView = ({ type }) => {
 export const ManageUsersView = ({ type }) => {
   const { classes, departments } = useClasses();
   const { addUser, users, deleteUser, updateUserProfile } = useUser();
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({ 
     name: '', id: '', password: '', department: '', email: '', mobileNumber: '' 
   });
@@ -153,20 +157,23 @@ export const ManageUsersView = ({ type }) => {
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleAddUser = async () => {
-    if (type === 'student' && !formData.department) return alert("Department/Class is required for students");
+    if (type === 'student' && !formData.department) {
+      showToast('Department/Class is required for students.', 'warning');
+      return;
+    }
 
     if (isEditing) {
       await updateUserProfile(formData.id, { ...formData, role: type });
-      alert(`${type} Details Updated Successfully!`);
+      showToast(`${type} details updated successfully!`, 'success');
       setFormData({ name: '', id: '', password: '', department: '', email: '', mobileNumber: '' });
       setIsEditing(false);
     } else {
       const success = await addUser({ ...formData, role: type });
       if (success) {
-        alert(`${type} Added Successfully!`);
+        showToast(`${type} added successfully!`, 'success');
         setFormData({ name: '', id: '', password: '', department: '', email: '', mobileNumber: '' });
       } else {
-        alert(`User ID "${formData.id}" already exists!`);
+        showToast(`User ID "${formData.id}" already exists!`, 'error');
       }
     }
   };
@@ -177,7 +184,7 @@ export const ManageUsersView = ({ type }) => {
   };
 
   const handleBulkUpload = async () => {
-    if (!bulkFile) return alert("Select a file");
+    if (!bulkFile) { showToast('Please select a file first.', 'warning'); return; }
     setBulkLoading(true);
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -200,11 +207,11 @@ export const ManageUsersView = ({ type }) => {
         const { error } = await supabase.from('users').insert(usersToInsert);
         if (error) throw error;
         
-        alert(`Successfully imported ${usersToInsert.length} users`);
+        showToast(`Successfully imported ${usersToInsert.length} users!`, 'success');
         setBulkFile(null);
         // Refresh users in context
       } catch (err) {
-        alert("Upload failed: " + err.message);
+        showToast('Upload failed: ' + err.message, 'error');
       } finally {
         setBulkLoading(false);
       }
@@ -366,6 +373,7 @@ export const ManageUsersView = ({ type }) => {
 export const ApprovalsView = () => {
   const [requests, setRequests] = useState([]);
   const [activeTab, setActiveTab] = useState('pending');
+  const { showToast } = useToast();
 
   useEffect(() => { fetchRequests(); }, []);
 
@@ -383,9 +391,9 @@ export const ApprovalsView = () => {
       .from('leave_requests')
       .update({ status: action })
       .eq('id', id);
-    if (error) { alert('Action failed: ' + error.message); return; }
+    if (error) { showToast('Action failed: ' + error.message, 'error'); return; }
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: action } : r));
-    alert(`${action} successfully.`);
+    showToast(`Request ${action.toLowerCase()} successfully.`, 'success');
   };
 
   const pendingRequests  = requests.filter(r => !r.status || r.status === 'Pending');
@@ -467,11 +475,12 @@ export const ApprovalsView = () => {
 
 export const SemResultsView = () => {
   const { classes } = useClasses();
+  const { showToast } = useToast();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async () => {
-    if (!file) return alert("Select a file");
+    if (!file) { showToast('Please select a file first.', 'warning'); return; }
     setLoading(true);
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -490,10 +499,10 @@ export const SemResultsView = () => {
         })));
         
         if (error) throw error;
-        alert("Results updated successfully");
+        showToast('Semester results updated successfully!', 'success');
         setFile(null);
       } catch (err) {
-        alert("Upload failed: " + err.message);
+        showToast('Upload failed: ' + err.message, 'error');
       } finally {
         setLoading(false);
       }
@@ -537,6 +546,7 @@ export const SemResultsView = () => {
 
 export const ManageClassesView = () => {
   const { classes, addClass, deleteClass, departments, addDepartment, deleteDepartment } = useClasses();
+  const { showToast } = useToast();
   const [newClass, setNewClass] = useState('');
   const [newDept, setNewDept] = useState('');
 
@@ -544,7 +554,7 @@ export const ManageClassesView = () => {
     if (newClass.trim()) {
       addClass(newClass.trim());
       setNewClass('');
-      alert('Class Added Successfully!');
+      showToast('Class added successfully!', 'success');
     }
   };
 
@@ -552,7 +562,7 @@ export const ManageClassesView = () => {
     if (newDept.trim()) {
       addDepartment(newDept.trim().toUpperCase());
       setNewDept('');
-      alert('Department Added Successfully!');
+      showToast('Department added successfully!', 'success');
     }
   };
 
@@ -639,6 +649,7 @@ export const ManageAnnouncementsView = () => {
   const [announcements, setAnnouncements] = useState([]);
   const [title, setTitle]     = useState('');
   const [message, setMessage] = useState('');
+  const { showToast } = useToast();
 
   useEffect(() => { fetchAnnouncements(); }, []);
 
@@ -653,24 +664,25 @@ export const ManageAnnouncementsView = () => {
 
   const handlePost = async (e) => {
     e.preventDefault();
-    if (!title || !message) return alert('Title and message required');
+    if (!title || !message) { showToast('Title and message are required.', 'warning'); return; }
 
     const { error } = await supabase
       .from('announcements')
       .insert([{ title, message }]);
 
-    if (error) { alert('Failed to post: ' + error.message); return; }
+    if (error) { showToast('Failed to post: ' + error.message, 'error'); return; }
     setTitle('');
     setMessage('');
-    alert('Announcement posted successfully!');
+    showToast('Announcement posted successfully!', 'success');
     await fetchAnnouncements();
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete announcement?')) return;
+    if (!window.confirm('Delete this announcement?')) return;
     const { error } = await supabase.from('announcements').delete().eq('id', id);
-    if (error) { alert('Delete failed: ' + error.message); return; }
+    if (error) { showToast('Delete failed: ' + error.message, 'error'); return; }
     setAnnouncements(prev => prev.filter(a => a.id !== id));
+    showToast('Announcement deleted.', 'info');
   };
 
   return (

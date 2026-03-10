@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
+import { useToast } from '../../../context/ToastContext';
 
 function LeaveView({ user }) {
   const [type, setType]         = useState('leave');
@@ -8,6 +9,7 @@ function LeaveView({ user }) {
   const [reason, setReason]     = useState('');
   const [history, setHistory]   = useState([]);
   const [loading, setLoading]   = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchHistory();
@@ -41,9 +43,9 @@ function LeaveView({ user }) {
     }]);
 
     if (error) {
-      alert('Failed to submit: ' + error.message);
+      showToast('Failed to submit request: ' + error.message, 'error');
     } else {
-      alert('Request submitted successfully!');
+      showToast('Request submitted successfully!', 'success');
       setFromDate('');
       setToDate('');
       setReason('');

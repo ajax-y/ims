@@ -2,7 +2,6 @@ import React from 'react';
 import { useUser } from '../../../context/UserContext';
 import { useData } from '../../../context/DataContext';
 import { Info } from 'lucide-react';
-import AnnouncementFeed from '../../../components/AnnouncementFeed';
 
 const LiveIcon = () => (
   <span style={{
@@ -92,8 +91,6 @@ function FacultyHomeView({ user }) {
           })}
         </div>
       )}
-
-      <AnnouncementFeed />
 
       <CalendarCard />
     </div>

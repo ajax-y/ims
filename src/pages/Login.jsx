@@ -17,12 +17,12 @@ function Login({ onLogin }) {
       return;
     }
 
-    const user = await loginUser(userId, password);
+    const result = await loginUser(userId, password);
 
-    if (user) {
-      onLogin(user);
+    if (result && !result.error) {
+      onLogin(result);
     } else {
-      setError('Invalid User ID or Password. Please try again.');
+      setError(result?.error || 'Invalid User ID or Password. Please try again.');
     }
   };
 

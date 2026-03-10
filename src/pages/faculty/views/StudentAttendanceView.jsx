@@ -4,10 +4,12 @@ import { useData } from '../../../context/DataContext';
 import { Info, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useToast } from '../../../context/ToastContext';
 
 function StudentAttendanceView({ user }) {
   const { getStudentsByClass } = useUser();
   const { incrementClassAttendance, getStudentAttendanceStats, getAssignmentsForFaculty } = useData();
+  const { showToast } = useToast();
   
   const assignments = getAssignmentsForFaculty(user?.id);
 
@@ -61,7 +63,7 @@ function StudentAttendanceView({ user }) {
     
     // Commit to context
     incrementClassAttendance(studentIds, presentIds, subjectName);
-    alert('Attendance Saved Successfully and student notifications sent!');
+    showToast('Attendance saved! Student notifications sent.', 'success');
   };
 
   const handleDownloadPDF = () => {

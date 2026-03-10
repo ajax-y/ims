@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useClasses } from '../../../context/ClassContext';
 import { supabase } from '../../../lib/supabase';
 import { FileUp, Trash2, File as FileIcon, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
+import { useToast } from '../../../context/ToastContext';
 
 const FacultyMaterialHubView = ({ user }) => {
   const { classes } = useClasses();
+  const { showToast } = useToast();
   const [selectedClass, setSelectedClass] = useState('');
   const [subjectName, setSubjectName] = useState('');
   const [file, setFile] = useState(null);
@@ -24,7 +26,7 @@ const FacultyMaterialHubView = ({ user }) => {
 
     if (error) {
       console.error('fetchMaterials:', error.message);
-      alert('API Error (Materials): ' + error.message + '\n\nPlease ensure the "materials" table exists in Supabase.');
+      showToast('Could not load materials. Please check Supabase configuration.', 'error');
     } else {
       setMaterials(data || []);
     }
@@ -33,7 +35,7 @@ const FacultyMaterialHubView = ({ user }) => {
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!selectedClass || !subjectName || !file) {
-      alert('Please fill all fields and select a file.');
+      showToast('Please fill all fields and select a file.', 'warning');
       return;
     }
 
@@ -52,7 +54,7 @@ const FacultyMaterialHubView = ({ user }) => {
       .upload(filePath, file);
 
     if (uploadError) {
-      alert('File upload failed: ' + uploadError.message);
+      showToast('File upload failed: ' + uploadError.message, 'error');
       setLoading(false);
       return;
     }
@@ -76,9 +78,9 @@ const FacultyMaterialHubView = ({ user }) => {
     }]);
 
     if (insertError) {
-      alert('Failed to save material info: ' + insertError.message);
+      showToast('Failed to save material: ' + insertError.message, 'error');
     } else {
-      alert('Material uploaded successfully!');
+      showToast('Material uploaded successfully!', 'success');
       setFile(null);
       setSubjectName('');
       e.target.reset();
@@ -99,10 +101,11 @@ const FacultyMaterialHubView = ({ user }) => {
     // Delete from table
     const { error } = await supabase.from('materials').delete().eq('id', material.id);
     if (error) {
-      alert('Delete failed: ' + error.message);
+      showToast('Delete failed: ' + error.message, 'error');
       return;
     }
     setMaterials(prev => prev.filter(m => m.id !== material.id));
+    showToast('Material deleted.', 'info');
   };
 
   const getIcon = (type) => {

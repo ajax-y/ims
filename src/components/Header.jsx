@@ -32,10 +32,16 @@ function Header({ user, onToggleSidebar, onLogout, onTabChange }) {
     if (pError) console.error('fetchNotifications:', pError.message);
     if (aError) console.error('fetchAnnouncements:', aError.message);
 
+    // Filter announcements older than 24 hours
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const freshAnnouncements = (globalAnnouncements || []).filter(
+      a => new Date(a.created_at) > cutoff
+    );
+
     // Merge and sort
     const merged = [
       ...(personalNotifs || []).map(n => ({ ...n, type: 'personal' })),
-      ...(globalAnnouncements || []).map(a => ({ 
+      ...freshAnnouncements.map(a => ({ 
         ...a, 
         type: 'announcement', 
         is_read: localStorage.getItem(`ims_read_announcement_${a.id}`) === 'true'

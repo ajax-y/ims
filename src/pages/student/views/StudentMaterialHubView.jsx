@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Download, File as FileIcon, Image as ImageIcon, Video as VideoIcon, Search } from 'lucide-react';
+import { useToast } from '../../../context/ToastContext';
 
 const StudentMaterialHubView = ({ user }) => {
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchMaterials();
@@ -23,7 +25,7 @@ const StudentMaterialHubView = ({ user }) => {
 
     if (error) {
       console.error('fetchMaterials (student):', error.message);
-      alert('API Error (Materials): ' + error.message + '\n\nPlease ensure the "materials" table exists in Supabase.');
+      showToast('Could not load materials. Please contact admin.', 'error');
     } else {
       setMaterials(data || []);
     }

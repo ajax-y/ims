@@ -3,11 +3,13 @@ import { UserPlus } from 'lucide-react';
 import { useUser } from '../../../context/UserContext';
 import { useClasses } from '../../../context/ClassContext';
 import { useData } from '../../../context/DataContext';
+import { useToast } from '../../../context/ToastContext';
 
 function FacultyAssignmentView() {
   const { users } = useUser();
   const { classes } = useClasses();
   const { assignClassToFaculty, facultyAssignments } = useData();
+  const { showToast } = useToast();
 
   const facultyMembers = users.filter(u => u.role === 'faculty');
 
@@ -25,19 +27,18 @@ function FacultyAssignmentView() {
 
   const handleSave = () => {
     if (!formData.facultyId || !formData.subject) {
-      alert("Please fill in all required fields (Faculty and Subject).");
+      showToast('Please fill in Faculty and Subject fields.', 'warning');
       return;
     }
 
     const assignment = {
       ...formData,
-      // Create the composite class string (e.g., 'B.E.ECE/01/A') for compatibility with ClassContext arrays later
       assignedClassNode: `${formData.department}/${formData.year}/${formData.section}`
     };
 
     assignClassToFaculty(assignment);
-    alert('Faculty assignment saved successfully!');
-    setFormData({ ...formData, subject: '' }); // reset form slightly for back-to-back entries
+    showToast('Faculty assignment saved successfully!', 'success');
+    setFormData({ ...formData, subject: '' });
   };
 
   return (

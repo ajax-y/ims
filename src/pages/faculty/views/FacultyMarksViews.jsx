@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useClasses } from '../../../context/ClassContext';
 import { useUser } from '../../../context/UserContext';
 import { useData } from '../../../context/DataContext';
+import { useToast } from '../../../context/ToastContext';
 
 const MarksEntryTable = ({ title, columns }) => {
   const { classes } = useClasses();
   const { getStudentsByClass } = useUser();
   const { getStudentMarks, updateMark, getStudentAttendanceStats } = useData();
+  const { showToast } = useToast();
   
   const [selectedClass, setSelectedClass] = useState('');
   const [students, setStudents] = useState([]);
@@ -22,8 +24,7 @@ const MarksEntryTable = ({ title, columns }) => {
   };
 
   const handleSubmit = () => {
-    // Save confirmation
-    alert(`${title} Saved Successfully to System!`);
+    showToast(`${title} Saved Successfully!`, 'success');
     
     // Background Check: 75% Rule Notification Trigger
     let alertCount = 0;

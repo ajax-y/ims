@@ -3,11 +3,13 @@ import Login from './pages/Login';
 import StudentDashboard from './pages/student/Dashboard';
 import FacultyDashboard from './pages/faculty/Dashboard';
 import AdminDashboard from './pages/admin/Dashboard';
+import { useToast } from './context/ToastContext';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null); 
   const [loading, setLoading] = useState(true);
   const timeoutRef = useRef(null);
+  const { showToast } = useToast();
 
   // 5 Minutes in milliseconds
   const TIMEOUT_DURATION = 5 * 60 * 1000;
@@ -17,7 +19,7 @@ function App() {
     if (currentUser) {
       timeoutRef.current = setTimeout(() => {
         handleLogout();
-        alert("You have been logged out due to 5 minutes of inactivity.");
+        showToast('You have been logged out due to 5 minutes of inactivity.', 'warning', 6000);
       }, TIMEOUT_DURATION);
     }
   };
