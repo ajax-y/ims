@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   Home, Calendar, CheckSquare, FileText, 
   BarChart2, BookOpen, Layers, ClipboardList,
-  Users, UserPlus, FileCheck, Award, FolderDown, UploadCloud, Bell
+  Users, UserPlus, FileCheck, Award, FolderDown, UploadCloud, Bell,
+  DollarSign, Library, GraduationCap
 } from 'lucide-react';
 
 const studentLinks = [
@@ -14,6 +15,9 @@ const studentLinks = [
   { id: 'lab', name: 'LAB Marks', icon: BookOpen },
   { id: 'assignment', name: 'Assignment Marks', icon: Layers },
   { id: 'grade', name: 'Grade Book', icon: Award },
+  { id: 'fees', name: 'Fee Dues', icon: DollarSign },
+  { id: 'library', name: 'Library', icon: Library },
+  { id: 'exams', name: 'Exams & Hall Ticket', icon: GraduationCap },
   { id: 'material_hub', name: 'Material Hub', icon: FolderDown }
 ];
 
@@ -39,7 +43,10 @@ const adminLinks = [
   { id: 'admins', name: 'Admin', icon: UserPlus },
   { id: 'classes', name: 'Manage Classes', icon: Layers },
   { id: 'approvals', name: 'Leave / OD', icon: FileCheck },
-  { id: 'results', name: 'Sem Results', icon: Award }
+  { id: 'results', name: 'Sem Results', icon: Award },
+  { id: 'fees', name: 'Fee Management', icon: DollarSign },
+  { id: 'library', name: 'Library System', icon: Library },
+  { id: 'exams', name: 'Examination Cell', icon: GraduationCap }
 ];
 
 function Sidebar({ role, activeTab, onTabChange, isOpen }) {

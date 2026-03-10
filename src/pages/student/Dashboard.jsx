@@ -6,6 +6,7 @@ import AttendanceView from './views/AttendanceView';
 import LeaveView from './views/LeaveView';
 import { CATMarks, LabMarks, AssignmentMarks, GradeBook } from './views/MarksViews';
 import StudentMaterialHubView from './views/StudentMaterialHubView';
+import { StudentFeeView, StudentLibraryView, StudentExamView } from './views/StudentERPViews';
 import ProfileView from '../../components/ProfileView';
 
 function StudentDashboard({ user, onLogout }) {
@@ -28,6 +29,9 @@ function StudentDashboard({ user, onLogout }) {
       case 'assignment': return <AssignmentMarks user={user} />;
       case 'grade': return <GradeBook user={user} />;
       case 'material_hub': return <StudentMaterialHubView user={user} />;
+      case 'fees': return <StudentFeeView user={user} />;
+      case 'library': return <StudentLibraryView user={user} />;
+      case 'exams': return <StudentExamView user={user} />;
       case 'profile': return <ProfileView user={user} />;
       default: return <HomeView user={user} />;
     }

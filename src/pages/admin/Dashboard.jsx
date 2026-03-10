@@ -7,7 +7,10 @@ import {
   ApprovalsView, 
   SemResultsView,
   ManageClassesView,
-  ManageAnnouncementsView
+  ManageAnnouncementsView,
+  FeeManagementView,
+  LibraryView,
+  ExamCellView
 } from './views/AdminViews';
 import FacultyAssignmentView from './views/FacultyAssignmentView';
 import ProfileView from '../../components/ProfileView';
@@ -33,6 +36,9 @@ function AdminDashboard({ user, onLogout }) {
       case 'admins': return <ManageUsersView type="admin" />;
       case 'approvals': return <ApprovalsView />;
       case 'results': return <SemResultsView />;
+      case 'fees': return <FeeManagementView />;
+      case 'library': return <LibraryView />;
+      case 'exams': return <ExamCellView />;
       case 'classes': return <ManageClassesView />;
       case 'profile': return <ProfileView user={user} />;
       default: return <AdminHomeView />;
