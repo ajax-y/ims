@@ -744,6 +744,7 @@ export const ManageAnnouncementsView = () => {
   const [title, setTitle]     = useState('');
   const [message, setMessage] = useState('');
   const { showToast } = useToast();
+  const confirm = useConfirm();
 
   useEffect(() => { fetchAnnouncements(); }, []);
 
